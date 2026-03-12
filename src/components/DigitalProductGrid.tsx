@@ -32,29 +32,20 @@ const DigitalProductGrid = () => {
 
   return (
     <div className="px-4 mt-6">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-bold">Digital Downloads</h2>
-        <Link to="/digital" className="text-sm text-primary font-medium hover:underline">সব দেখুন →</Link>
-      </div>
+      <h2 className="text-lg font-bold text-center mb-4">ডিজিটাল ডাউনলোডস</h2>
       <div className="grid grid-cols-3 gap-3">
         {products.map(p => (
           <Link key={p.id} to={`/digital/${p.id}`} className="group">
-            <div className="rounded-xl overflow-hidden card-shadow hover:card-shadow-hover transition-shadow bg-card">
+            <div className="rounded-xl overflow-hidden card-shadow hover:card-shadow-hover transition-shadow">
               {p.image_url ? (
                 <img src={p.image_url} alt={p.name} className="w-full aspect-square object-cover" />
               ) : (
                 <div className="w-full aspect-square bg-muted flex items-center justify-center">
-                  <FileIcon className="h-10 w-10 text-muted-foreground/40" />
+                  <FileIcon className="h-8 w-8 text-muted-foreground" />
                 </div>
               )}
-              <div className="p-2.5">
-                <p className="text-xs font-semibold truncate">{p.name}</p>
-                <div className="flex items-center justify-between mt-1">
-                  <span className="text-[10px] text-muted-foreground uppercase">{p.file_type}</span>
-                  <span className="text-xs font-bold text-primary">৳{p.price}</span>
-                </div>
-              </div>
             </div>
+            <p className="text-xs font-semibold text-center mt-2">{p.name}</p>
           </Link>
         ))}
       </div>

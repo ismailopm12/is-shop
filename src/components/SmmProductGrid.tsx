@@ -30,14 +30,11 @@ const SmmProductGrid = () => {
 
   return (
     <div className="px-4 mt-6">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-bold">SMM Services</h2>
-        <Link to="/smm" className="text-sm text-primary font-medium hover:underline">সব দেখুন →</Link>
-      </div>
+      <h2 className="text-lg font-bold text-center mb-4">এসএমএম সার্ভিস</h2>
       <div className="grid grid-cols-3 gap-3">
         {products.map(p => (
           <Link key={p.id} to={`/smm/${p.id}`} className="group">
-            <div className="rounded-xl overflow-hidden card-shadow hover:card-shadow-hover transition-shadow bg-card">
+            <div className="rounded-xl overflow-hidden card-shadow hover:card-shadow-hover transition-shadow">
               {p.image_url ? (
                 <img src={p.image_url} alt={p.name} className="w-full aspect-square object-cover" />
               ) : (
@@ -45,11 +42,8 @@ const SmmProductGrid = () => {
                   <span className="text-3xl">📱</span>
                 </div>
               )}
-              <div className="p-2.5">
-                <p className="text-xs font-semibold truncate">{p.name}</p>
-                <span className="text-xs font-bold text-primary">৳{p.price}</span>
-              </div>
             </div>
+            <p className="text-xs font-semibold text-center mt-2">{p.name}</p>
           </Link>
         ))}
       </div>
