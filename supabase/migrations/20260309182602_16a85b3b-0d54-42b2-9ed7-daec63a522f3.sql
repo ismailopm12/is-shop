@@ -1,0 +1,1 @@
+ALTER TABLE public.payment_records ADD COLUMN package_id uuid REFERENCES public.diamond_packages(id) ON DELETE SET NULL;

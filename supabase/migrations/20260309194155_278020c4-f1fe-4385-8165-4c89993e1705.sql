@@ -1,0 +1,1 @@
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS package_id uuid REFERENCES public.diamond_packages(id);
