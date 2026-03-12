@@ -29,10 +29,21 @@ const Login = () => {
   };
 
   const handleGoogleLogin = async () => {
-    const { error } = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin,
-    });
-    if (error) toast.error("Google লগইন ব্যর্থ হয়েছে");
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: `${window.location.origin}/`,
+        },
+      });
+      if (error) {
+        console.error("Google login error:", error);
+        toast.error(`Google লগইন ব্যর্থ: ${error.message}`);
+      }
+    } catch (err: any) {
+      console.error("Google login error:", err);
+      toast.error("Google লগইন ব্যর্থ হয়েছে। এডমিনকে যোগাযোগ করুন।");
+    }
   };
 
   return (
