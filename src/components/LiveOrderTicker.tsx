@@ -80,18 +80,18 @@ const LiveOrderTicker = () => {
           </span>
           লাইভ অর্ডার
         </h3>
-        <div className="rounded-md bg-card card-shadow overflow-hidden">
-          {/* Responsive Table - No Horizontal Scroll */}
+        <div className="rounded-lg bg-card shadow-md overflow-hidden border border-border/30">
+          {/* Responsive Table - Compact Spacing */}
           <div className="overflow-x-auto">
             <table className="w-full text-[10px]">
               <thead>
-                <tr className="border-b border-border bg-muted/50">
-                  <th className="text-left py-2 px-2 font-semibold text-[9px] uppercase tracking-tight text-muted-foreground whitespace-nowrap">সময়</th>
-                  <th className="text-left py-2 px-2 font-semibold text-[9px] uppercase tracking-tight text-muted-foreground whitespace-nowrap">ব্যবহারকারী</th>
-                  <th className="text-left py-2 px-2 font-semibold text-[9px] uppercase tracking-tight text-muted-foreground whitespace-nowrap hidden sm:table-cell">প্রোডাক্ট</th>
-                  <th className="text-left py-2 px-2 font-semibold text-[9px] uppercase tracking-tight text-muted-foreground whitespace-nowrap hidden md:table-cell">প্যাকেজ</th>
-                  <th className="text-center py-2 px-2 font-semibold text-[9px] uppercase tracking-tight text-muted-foreground whitespace-nowrap">স্ট্যাটাস</th>
-                  <th className="text-right py-2 px-2 font-semibold text-[9px] uppercase tracking-tight text-muted-foreground whitespace-nowrap">মূল্য</th>
+                <tr className="border-b border-border bg-muted/30">
+                  <th className="text-left py-1.5 px-1.5 font-semibold text-[9px] uppercase tracking-tight text-muted-foreground whitespace-nowrap">সময়</th>
+                  <th className="text-left py-1.5 px-1.5 font-semibold text-[9px] uppercase tracking-tight text-muted-foreground whitespace-nowrap">ব্যবহারকারী</th>
+                  <th className="text-left py-1.5 px-1.5 font-semibold text-[9px] uppercase tracking-tight text-muted-foreground whitespace-nowrap hidden sm:table-cell">প্রোডাক্ট</th>
+                  <th className="text-left py-1.5 px-1.5 font-semibold text-[9px] uppercase tracking-tight text-muted-foreground whitespace-nowrap hidden md:table-cell">প্যাকেজ</th>
+                  <th className="text-center py-1.5 px-1.5 font-semibold text-[9px] uppercase tracking-tight text-muted-foreground whitespace-nowrap">স্ট্যাটাস</th>
+                  <th className="text-right py-1.5 px-1.5 font-semibold text-[9px] uppercase tracking-tight text-muted-foreground whitespace-nowrap">মূল্য</th>
                 </tr>
               </thead>
               <tbody>
@@ -101,13 +101,13 @@ const LiveOrderTicker = () => {
                   return (
                     <tr 
                       key={order.id} 
-                      className="border-b border-border/30 hover:bg-accent/30 transition-all duration-150"
+                      className="border-b border-border/20 hover:bg-accent/20 transition-all duration-150"
                       style={{ animationDelay: `${index * 30}ms` }}
                     >
-                      <td className="py-2 px-2 text-[9px] text-muted-foreground whitespace-nowrap font-mono align-middle">
+                      <td className="py-1.5 px-1.5 text-[9px] text-muted-foreground whitespace-nowrap font-mono align-middle">
                         {new Date(order.created_at).toLocaleTimeString("bn-BD", { hour: '2-digit', minute: '2-digit' })}
                       </td>
-                      <td className="py-2 px-2 align-middle">
+                      <td className="py-1.5 px-1.5 align-middle">
                         <div className="flex items-center gap-1">
                           {order.avatar_url ? (
                             <img
@@ -126,23 +126,23 @@ const LiveOrderTicker = () => {
                           </span>
                         </div>
                       </td>
-                      <td className="py-2 px-2 whitespace-nowrap hidden sm:table-cell align-middle">
+                      <td className="py-1.5 px-1.5 whitespace-nowrap hidden sm:table-cell align-middle">
                         <div className="font-medium text-[9px] text-foreground truncate max-w-[100px]">
                           {order.product_name}
                         </div>
                       </td>
-                      <td className="py-2 px-2 whitespace-nowrap hidden md:table-cell align-middle">
+                      <td className="py-1.5 px-1.5 whitespace-nowrap hidden md:table-cell align-middle">
                         <div className="text-[8px] text-muted-foreground truncate max-w-[80px]">
                           {order.package_info}
                         </div>
                       </td>
-                      <td className="py-2 px-2 align-middle">
+                      <td className="py-1.5 px-1.5 align-middle">
                         <div className="flex items-center justify-center gap-0.5">
                           <Icon className={`h-2.5 w-2.5 ${cfg.color}`} />
                           <span className={`text-[8px] font-bold ${cfg.color} whitespace-nowrap`}>{cfg.label}</span>
                         </div>
                       </td>
-                      <td className="py-2 px-2 text-right whitespace-nowrap align-middle">
+                      <td className="py-1.5 px-1.5 text-right whitespace-nowrap align-middle">
                         <span className="text-[9px] font-bold text-primary bg-primary/10 px-1 py-0.5 rounded-sm">
                           ৳{order.amount}
                         </span>
@@ -152,7 +152,7 @@ const LiveOrderTicker = () => {
                 })}
                 {orders.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="text-center text-muted-foreground py-4">
+                    <td colSpan={6} className="text-center text-muted-foreground py-3">
                       কোনো লাইভ অর্ডার নেই
                     </td>
                   </tr>
