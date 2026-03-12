@@ -679,7 +679,7 @@ const ProductDetail = () => {
         <section className="bg-card rounded-xl p-4 card-shadow">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <span className="bg-primary text-primary-foreground rounded-full w-7 h-7 flex items-center justify-center text-sm font-bold">2</span>
+              <span className="bg-primary text-primary-foreground rounded-full w-7 h-7 flex items-center justify-center text-sm font-bold">{product.is_voucher ? "2" : "3"}</span>
               <h2 className="font-bold">Quantity</h2>
             </div>
             <Badge variant="secondary" className="bg-accent text-foreground">
@@ -735,7 +735,7 @@ const ProductDetail = () => {
         {/* Step 3: Payment */}
         <section className="bg-card rounded-xl p-4 card-shadow">
           <div className="flex items-center gap-2 mb-4">
-            <span className="bg-primary text-primary-foreground rounded-full w-7 h-7 flex items-center justify-center text-sm font-bold">{product.is_voucher ? "2" : "3"}</span>
+            <span className="bg-primary text-primary-foreground rounded-full w-7 h-7 flex items-center justify-center text-sm font-bold">4</span>
             <h2 className="font-bold">Payment Methods</h2>
           </div>
           <div className="grid grid-cols-3 gap-3">
