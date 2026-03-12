@@ -54,6 +54,7 @@ const ProductDetail = () => {
   const [ordering, setOrdering] = useState(false);
   const [viewCount, setViewCount] = useState(0);
   const [coinValue, setCoinValue] = useState<number>(0.10); // Default 1 coin = ৳0.10
+  const [quantity, setQuantity] = useState(1); // Quantity selector
 
   useEffect(() => {
     const fetchData = async () => {
@@ -201,8 +202,9 @@ const ProductDetail = () => {
     console.log("Variant ID type:", typeof variant?.id);
     console.log("===========================");
     
-    const packageInfo = product.is_voucher ? (variant ? `Voucher - ৳${variant.price}` : "Voucher Code") : `${variant.value}`;
-    const amount = variant ? variant.price : 0;
+    const packageInfo = product.is_voucher ? (variant ? `Voucher - ৳${variant.price} x ${quantity}` : "Voucher Code") : `${variant.value}`;
+    const singleAmount = variant ? variant.price : 0;
+    const amount = singleAmount * quantity; // Total amount based on quantity
     
     console.log("Checkout attempt:", {
       productId: product.id,
@@ -673,12 +675,55 @@ const ProductDetail = () => {
           </section>
         )}
 
+        {/* Quantity Selector */}
+        <section className="bg-card rounded-xl p-4 card-shadow">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <span className="bg-primary text-primary-foreground rounded-full w-7 h-7 flex items-center justify-center text-sm font-bold">2</span>
+              <h2 className="font-bold">Quantity</h2>
+            </div>
+            <Badge variant="secondary" className="bg-accent text-foreground">
+              Total: ৳{(selectedPrice * quantity).toFixed(2)} | {Math.round((selectedPrice * quantity) / coinValue)} 🪙
+            </Badge>
+          </div>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setQuantity(Math.max(1, quantity - 1))}
+              className="w-10 h-10 rounded-lg bg-accent hover:bg-accent/80 flex items-center justify-center text-foreground font-bold text-xl transition"
+              disabled={quantity <= 1}
+            >
+              −
+            </button>
+            <input
+              type="number"
+              min="1"
+              max="100"
+              value={quantity.toString()}
+              onChange={(e) => {
+                const val = parseInt(e.target.value);
+                if (!isNaN(val) && val >= 1 && val <= 100) {
+                  setQuantity(val);
+                }
+              }}
+              className="w-20 h-10 text-center border-2 border-border rounded-lg bg-background focus:border-primary focus:outline-none font-bold text-lg"
+            />
+            <button
+              onClick={() => setQuantity(Math.min(100, quantity + 1))}
+              className="w-10 h-10 rounded-lg bg-accent hover:bg-accent/80 flex items-center justify-center text-foreground font-bold text-xl transition"
+              disabled={quantity >= 100}
+            >
+              +
+            </button>
+            <span className="text-muted-foreground text-sm ml-2">Max: 100</span>
+          </div>
+        </section>
+
         {/* Step 2: Account Info */}
         {!product.is_voucher && (
           <section className="bg-card rounded-xl p-4 card-shadow">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
-                <span className="bg-primary text-primary-foreground rounded-full w-7 h-7 flex items-center justify-center text-sm font-bold">2</span>
+                <span className="bg-primary text-primary-foreground rounded-full w-7 h-7 flex items-center justify-center text-sm font-bold">{product.is_voucher ? "2" : "3"}</span>
                 <h2 className="font-bold">Account Info</h2>
               </div>
             </div>
