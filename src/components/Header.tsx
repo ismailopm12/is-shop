@@ -1,10 +1,11 @@
 import logo from "@/assets/logo.png";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSiteSettings } from "@/contexts/SiteSettingsContext";
 import { useAdminCheck } from "@/hooks/useAdminCheck";
-import { LogOut, Shield } from "lucide-react";
+import { LogOut, Shield, Wallet } from "lucide-react";
 
 const Header = () => {
   const { user, profile, signOut } = useAuth();
@@ -34,6 +35,16 @@ const Header = () => {
         <div className="flex items-center gap-2">
           {user ? (
             <>
+              {/* Wallet Balance - Always Visible */}
+              <Link to="/add-money" onClick={handleNavClick}>
+                <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-accent/80 hover:bg-accent transition cursor-pointer border border-border">
+                  <Wallet className="h-4 w-4 text-primary" />
+                  <Badge variant="secondary" className="bg-background text-foreground font-bold text-xs ml-0.5">
+                    ৳{profile?.balance?.toFixed(2) || "0.00"}
+                  </Badge>
+                </div>
+              </Link>
+
               {isAdmin && (
                 <Link to="/admin" onClick={handleNavClick}>
                   <Button size="sm" variant="outline" className="text-sm gap-1 border-primary text-primary">
@@ -41,9 +52,11 @@ const Header = () => {
                   </Button>
                 </Link>
               )}
+              
               <span className="text-xs font-medium text-muted-foreground hidden sm:block">
                 {profile?.display_name || user.email?.split("@")[0]}
               </span>
+              
               <Button size="sm" variant="outline" onClick={signOut} className="text-sm gap-1">
                 <LogOut className="h-3.5 w-3.5" /> Logout
               </Button>
