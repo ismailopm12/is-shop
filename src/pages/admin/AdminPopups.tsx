@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
+import ImageUpload from "@/components/admin/ImageUpload";
 import { 
   Plus, 
   Edit2, 
@@ -18,7 +19,9 @@ import {
   Image as ImageIcon,
   TrendingUp,
   Calendar,
-  Users
+  Users,
+  Upload,
+  Film
 } from "lucide-react";
 import {
   Dialog,
@@ -35,6 +38,7 @@ interface Popup {
   description?: string;
   media_type: 'image' | 'video';
   media_url: string;
+  media_alt?: string;
   cta_text?: string;
   cta_link?: string;
   display_delay: number;
@@ -44,8 +48,8 @@ interface Popup {
   end_date?: string;
   target_audience: string;
   priority: number;
-  views_count: number;
-  clicks_count: number;
+  views_count?: number;
+  clicks_count?: number;
 }
 
 const AdminPopups = () => {
@@ -148,14 +152,14 @@ const AdminPopups = () => {
       if (editingPopup) {
         // Update existing
         const result = await supabase
-          .from("promotional_popups" as any)
+          .from("promotional_popups")
           .update(saveData)
           .eq("id", editingPopup.id);
         error = result.error;
       } else {
         // Create new
         const result = await supabase
-          .from("promotional_popups" as any)
+          .from("promotional_popups")
           .insert([{ ...saveData, created_at: new Date().toISOString() }]);
         error = result.error;
       }
@@ -373,13 +377,38 @@ const AdminPopups = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="media_url">Media URL *</Label>
-                <Input
-                  id="media_url"
-                  value={formData.media_url}
-                  onChange={(e) => setFormData({ ...formData, media_url: e.target.value })}
-                  placeholder={formData.media_type === 'image' ? "/offer.jpg" : "/promo.mp4"}
-                />
+                <Label>Media Upload *</Label>
+                <div className="rounded-lg border border-border p-4 bg-muted/50">
+                  {formData.media_type === 'image' ? (
+                    <ImageUpload
+                      folder="popups"
+                      currentUrl={formData.media_url}
+                      onUpload={(url) => setFormData({ ...formData, media_url: url })}
+                    />
+                  ) : (
+                    <div className="space-y-2">
+                      <p className="text-sm text-muted-foreground flex items-center gap-2">
+                        <Film className="h-4 w-4" />
+                        Video upload coming soon. Please use video URL for now.
+                      </p>
+                      <Input
+                        id="media_url"
+                        value={formData.media_url}
+                        onChange={(e) => setFormData({ ...formData, media_url: e.target.value })}
+                        placeholder="https://example.com/video.mp4"
+                      />
+                    </div>
+                  )}
+                </div>
+                {formData.media_url && (
+                  <div className="mt-2">
+                    {formData.media_type === 'image' ? (
+                      <img src={formData.media_url} alt="Preview" className="h-32 w-full object-cover rounded-lg border" />
+                    ) : (
+                      <video src={formData.media_url} controls className="h-32 w-full object-cover rounded-lg border" />
+                    )}
+                  </div>
+                )}
               </div>
             </div>
 

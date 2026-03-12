@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { SiteSettingsProvider } from "@/contexts/SiteSettingsContext";
+import PromotionalPopup from "@/components/PromotionalPopup";
 import Index from "./pages/Index";
 import ProductDetail from "./pages/ProductDetail";
 import Profile from "./pages/Profile";
@@ -52,6 +53,8 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <SiteSettingsProvider>
+            {/* Promotional Popup - Shows on all pages */}
+            <PromotionalPopup />
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/product/:slug" element={<ProductDetail />} />
