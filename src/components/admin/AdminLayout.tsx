@@ -39,8 +39,8 @@ function AdminContent({ children, mobileMenuOpen, setMobileMenuOpen }: {
       </header>
 
       {/* Main Content Area */}
-      <main className="flex-1 p-4 md:p-6 lg:p-8 bg-background overflow-x-hidden">
-        <div className="w-full max-w-[1600px] mx-auto px-2 md:px-4">
+      <main className="flex-1 p-0 md:p-4 lg:p-6 bg-background overflow-x-hidden w-full">
+        <div className="w-full mx-auto px-3 md:px-6 lg:px-8">
           {children}
         </div>
       </main>
