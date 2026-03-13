@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Search, Wallet, Plus, Minus, TrendingUp, DollarSign, Users, CheckCircle, XCircle } from "lucide-react";
+import { Search, Wallet, Plus, Minus, TrendingUp, DollarSign, Users, CheckCircle, XCircle, Video, Upload, Trash2, Edit } from "lucide-react";
 
 interface UserProfile {
   id: string;
@@ -30,16 +30,39 @@ interface PaymentRecord {
   invoice_id: string | null;
 }
 
+interface PaymentVideo {
+  id: string;
+  title: string;
+  description: string | null;
+  video_url: string;
+  thumbnail_url: string | null;
+  duration_seconds: number | null;
+  file_size_mb: number | null;
+  is_active: boolean;
+  sort_order: number;
+  created_at: string;
+}
+
 const AdminWallet = () => {
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [payments, setPayments] = useState<PaymentRecord[]>([]);
+  const [videos, setVideos] = useState<PaymentVideo[]>([]);
   const [search, setSearch] = useState("");
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
   const [actionType, setActionType] = useState<"add" | "deduct">("add");
   const [amount, setAmount] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [videoDialogOpen, setVideoDialogOpen] = useState(false);
+  const [editingVideo, setEditingVideo] = useState<PaymentVideo | null>(null);
   const [processing, setProcessing] = useState(false);
   const [filterStatus, setFilterStatus] = useState<string>("all");
+  
+  // Video form state
+  const [videoTitle, setVideoTitle] = useState("");
+  const [videoDescription, setVideoDescription] = useState("");
+  const [videoUrl, setVideoUrl] = useState("");
+  const [videoActive, setVideoActive] = useState(true);
+  const [uploading, setUploading] = useState(false);
 
   const fetchUsers = async () => {
     const { data } = await supabase.from("profiles").select("*").order("balance", { ascending: false });
@@ -56,9 +79,18 @@ const AdminWallet = () => {
     if (data) setPayments(data);
   };
 
+  const fetchVideos = async () => {
+    const { data } = await supabase
+      .from("payment_method_videos")
+      .select("*")
+      .order("sort_order");
+    if (data) setVideos(data);
+  };
+
   useEffect(() => {
     fetchUsers();
     fetchPayments();
+    fetchVideos();
   }, []);
 
   const totalBalance = users.reduce((sum, u) => sum + u.balance, 0);
@@ -185,6 +217,126 @@ const AdminWallet = () => {
     fetchPayments();
   };
 
+  // Video Management Functions
+  const handleUploadVideo = async () => {
+    if (!videoTitle || !videoUrl) {
+      toast.error("শিরোনাম এবং ভিডিও লিংক প্রয়োজন");
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const videoData = {
+        title: videoTitle,
+        description: videoDescription,
+        video_url: videoUrl,
+        is_active: videoActive,
+        sort_order: videos.length + 1,
+      };
+
+      let error;
+      if (editingVideo) {
+        // Update existing video
+        ({ error } = await supabase
+          .from("payment_method_videos")
+          .update(videoData)
+          .eq("id", editingVideo.id));
+      } else {
+        // Create new video
+        ({ error } = await supabase
+          .from("payment_method_videos")
+          .insert([videoData]));
+      }
+
+      if (error) throw error;
+
+      toast.success(editingVideo ? "ভিডিও আপডেট হয়েছে" : "নতুন ভিডিও যোগ হয়েছে");
+      resetVideoForm();
+      fetchVideos();
+    } catch (err: any) {
+      toast.error(err.message || "ভিডিও সেভ করতে ব্যর্থ");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleEditVideo = (video: PaymentVideo) => {
+    setEditingVideo(video);
+    setVideoTitle(video.title);
+    setVideoDescription(video.description || "");
+    setVideoUrl(video.video_url);
+    setVideoActive(video.is_active);
+    setVideoDialogOpen(true);
+  };
+
+  const handleDeleteVideo = async (videoId: string) => {
+    if (!confirm("এই ভিডিওটি মুছে ফেলতে চান?")) return;
+
+    const { error } = await supabase
+      .from("payment_method_videos")
+      .delete()
+      .eq("id", videoId);
+
+    if (error) {
+      toast.error("মুছে ফেলতে ব্যর্থ");
+      return;
+    }
+
+    toast.success("ভিডিও মুছে ফেলা হয়েছে");
+    fetchVideos();
+  };
+
+  const resetVideoForm = () => {
+    setVideoTitle("");
+    setVideoDescription("");
+    setVideoUrl("");
+    setVideoActive(true);
+    setEditingVideo(null);
+    setVideoDialogOpen(false);
+  };
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Check file size (max 50MB)
+    if (file.size > 50 * 1024 * 1024) {
+      toast.error("ফাইলের সাইজ ৫০ MB এর বেশি হতে পারবে না");
+      return;
+    }
+
+    // Check file type
+    if (!file.type.startsWith('video/')) {
+      toast.error("শুধুমাত্র ভিডিও ফাইল আপলোড করা যাবে");
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+      
+      // Upload to Supabase Storage
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('payment-videos')
+        .upload(fileName, file);
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('payment-videos')
+        .getPublicUrl(fileName);
+
+      setVideoUrl(publicUrl);
+      toast.success("ভিডিও আপলোড সম্পন্ন হয়েছে");
+    } catch (err: any) {
+      toast.error(err.message || "আপলোড ব্যর্থ");
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const openAction = (user: UserProfile, type: "add" | "deduct") => {
     setSelectedUser(user);
     setActionType(type);
@@ -286,6 +438,88 @@ const AdminWallet = () => {
                   <TableRow>
                     <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
                       কোনো ইউজার পাওয়া যায়নি
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+
+        {/* Payment Method Videos */}
+        <Card>
+          <CardHeader>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <CardTitle className="flex items-center gap-2">
+                <Video className="h-5 w-5" /> পেমেন্ট মেথড ভিডিও
+              </CardTitle>
+              <Button 
+                size="sm" 
+                onClick={() => {
+                  resetVideoForm();
+                  setVideoDialogOpen(true);
+                }}
+                className="gap-2"
+              >
+                <Plus className="h-4 w-4" /> নতুন ভিডিও যোগ করুন
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>শিরোনাম</TableHead>
+                  <TableHead>বিবরণ</TableHead>
+                  <TableHead>স্ট্যাটাস</TableHead>
+                  <TableHead>ক্রম</TableHead>
+                  <TableHead>অ্যাকশন</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {videos.map((v) => (
+                  <TableRow key={v.id}>
+                    <TableCell className="font-medium max-w-[200px] truncate">
+                      <div className="flex items-center gap-2">
+                        <Video className="h-4 w-4 text-muted-foreground" />
+                        {v.title}
+                      </div>
+                    </TableCell>
+                    <TableCell className="max-w-[300px] truncate text-sm text-muted-foreground">
+                      {v.description || "—"}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={v.is_active ? "default" : "secondary"}>
+                        {v.is_active ? "সক্রিয়" : "নিষ্ক্রিয়"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>{v.sort_order}</TableCell>
+                    <TableCell>
+                      <div className="flex gap-1">
+                        <Button 
+                          size="sm" 
+                          variant="ghost" 
+                          onClick={() => handleEditVideo(v)}
+                          className="text-blue-600 hover:bg-blue-50"
+                        >
+                          <Edit className="h-3 w-3" />
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="ghost" 
+                          onClick={() => handleDeleteVideo(v.id)}
+                          className="text-red-600 hover:bg-red-50"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {videos.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                      কোনো ভিডিও নেই। উপরে "নতুন ভিডিও যোগ করুন" এ ক্লিক করুন।
                     </TableCell>
                   </TableRow>
                 )}
@@ -430,6 +664,131 @@ const AdminWallet = () => {
               >
                 {processing ? "প্রসেসিং..." : actionType === "add" ? "যোগ করুন" : "কেটে নিন"}
               </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Video Upload/Edit Dialog */}
+        <Dialog open={videoDialogOpen} onOpenChange={setVideoDialogOpen}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Video className="h-5 w-5 text-primary" />
+                {editingVideo ? "ভিডিও এডিট করুন" : "নতুন ভিডিও যোগ করুন"}
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium text-foreground block mb-1">
+                  শিরোনাম <span className="text-red-500">*</span>
+                </label>
+                <Input
+                  placeholder="যেমন: বিকাশে টাকা জমা দেওয়ার নিয়ম"
+                  value={videoTitle}
+                  onChange={(e) => setVideoTitle(e.target.value)}
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-foreground block mb-1">বিবরণ</label>
+                <textarea
+                  className="w-full min-h-[80px] p-2 border rounded-md resize-none focus:outline-none focus:ring-2 focus:ring-primary"
+                  placeholder="ভিডিও সম্পর্কে বিস্তারিত লিখুন..."
+                  value={videoDescription}
+                  onChange={(e) => setVideoDescription(e.target.value)}
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-foreground block mb-1">
+                  ভিডিও লিংক <span className="text-red-500">*</span>
+                </label>
+                <div className="space-y-2">
+                  <Input
+                    placeholder="https://example.com/video.mp4 অথবা নিচে আপলোড করুন"
+                    value={videoUrl}
+                    onChange={(e) => setVideoUrl(e.target.value)}
+                  />
+                  
+                  <div className="border-2 border-dashed border-border rounded-lg p-4 text-center bg-muted/50">
+                    <Upload className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+                    <p className="text-sm font-medium text-foreground mb-1">
+                      ভিডিও ফাইল আপলোড করুন
+                    </p>
+                    <p className="text-xs text-muted-foreground mb-3">
+                      সর্বোচ্চ ৫০ MB (MP4, WebM, AVI)
+                    </p>
+                    <input
+                      type="file"
+                      accept="video/*"
+                      onChange={handleFileUpload}
+                      disabled={uploading}
+                      className="hidden"
+                      id="video-upload"
+                    />
+                    <label htmlFor="video-upload">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        disabled={uploading}
+                        className="cursor-pointer"
+                        asChild
+                      >
+                        <span>
+                          {uploading ? "আপলোড হচ্ছে..." : "ফাইল সিলেক্ট করুন"}
+                        </span>
+                      </Button>
+                    </label>
+                  </div>
+
+                  {videoUrl && (
+                    <div className="mt-2 p-3 bg-green-50 border border-green-200 rounded-lg">
+                      <p className="text-xs text-green-700 font-medium">
+                        ✓ ভিডিও লিংক সেট হয়েছে
+                      </p>
+                      <a 
+                        href={videoUrl} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-xs text-blue-600 hover:underline mt-1 block truncate"
+                      >
+                        {videoUrl}
+                      </a>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="video-active"
+                  checked={videoActive}
+                  onChange={(e) => setVideoActive(e.target.checked)}
+                  className="h-4 w-4"
+                />
+                <label htmlFor="video-active" className="text-sm font-medium">
+                  ভিডিওটি সক্রিয় রাখুন
+                </label>
+              </div>
+
+              <div className="flex gap-2 pt-4">
+                <Button
+                  variant="outline"
+                  onClick={resetVideoForm}
+                  className="flex-1"
+                >
+                  বাতিল করুন
+                </Button>
+                <Button
+                  onClick={handleUploadVideo}
+                  disabled={uploading || !videoTitle || !videoUrl}
+                  className="flex-1"
+                >
+                  {uploading ? "সেভ হচ্ছে..." : editingVideo ? "আপডেট করুন" : "যোগ করুন"}
+                </Button>
+              </div>
             </div>
           </DialogContent>
         </Dialog>
