@@ -49,26 +49,31 @@ export function AdminSidebar() {
   };
 
   return (
-    <Sidebar collapsible="icon">
-      <SidebarContent>
+    <Sidebar collapsible="icon" className="border-r bg-card">
+      <SidebarContent className="bg-background">
         <SidebarGroup>
-          <SidebarGroupLabel className="text-xs uppercase tracking-wider text-muted-foreground">
+          <SidebarGroupLabel className="text-xs uppercase tracking-wider text-muted-foreground px-3 md:px-4 py-3">
             {!collapsed && "Admin Panel"}
           </SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className="space-y-1">
               {items.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
+                  <SidebarMenuButton 
+                    asChild 
+                    className="min-h-[44px] md:min-h-[48px] px-3 md:px-4 hover:bg-accent/50 transition-colors"
+                  >
                     <NavLink
                       to={item.url}
                       end={item.url === "/admin"}
-                      className="hover:bg-accent/50"
+                      className="flex items-center gap-2 md:gap-3 w-full"
                       activeClassName="bg-accent text-accent-foreground font-semibold"
                       onClick={handleNavClick}
                     >
-                      <item.icon className="mr-2 h-4 w-4" />
-                      {!collapsed && <span>{item.title}</span>}
+                      <item.icon className="h-4 w-4 md:h-5 md:w-5 flex-shrink-0" />
+                      {!collapsed && (
+                        <span className="text-sm md:text-base truncate">{item.title}</span>
+                      )}
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

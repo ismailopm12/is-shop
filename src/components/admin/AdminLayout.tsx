@@ -66,11 +66,13 @@ const AdminLayout = ({ children }: { children: ReactNode }) => {
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full">
-        {/* Desktop Sidebar */}
-        <AdminSidebar />
+      <div className="min-h-screen flex w-full bg-background">
+        {/* Desktop Sidebar - Fixed position */}
+        <div className="hidden md:block sticky top-0 h-screen">
+          <AdminSidebar />
+        </div>
 
-        {/* Mobile Sidebar - Built into shadcn/ui sidebar */}
+        {/* Mobile & Desktop Content */}
         <AdminContent 
           mobileMenuOpen={mobileMenuOpen} 
           setMobileMenuOpen={setMobileMenuOpen}
