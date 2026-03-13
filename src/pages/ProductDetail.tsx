@@ -84,6 +84,9 @@ const ProductDetail = () => {
                          crypto.randomUUID();
         sessionStorage.setItem('view_session_id', sessionId);
         
+        console.log("=== PRODUCT DETAIL DEBUG ===");
+        console.log("Looking for slug:", slug);
+        
         // Fetch product with timeout
         const productPromise = supabase
           .from("products")
@@ -93,7 +96,7 @@ const ProductDetail = () => {
           .single();
         
         const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Request timeout')), 10000)
+          setTimeout(() => reject(new Error('Request timeout')), 15000)
         );
         
         const { data: prod, error: productError } = await Promise.race([
@@ -101,9 +104,18 @@ const ProductDetail = () => {
           timeoutPromise
         ]) as any;
 
+        console.log("Product response:", { prod, productError });
+
         if (productError || !prod) {
           console.error("Product fetch error:", productError);
-          toast.error("প্রোডাক্ট পাওয়া যায়নি");
+          console.error("No product found for slug:", slug);
+          toast.error(`প্রোডাক্ট পাওয়া যায়নি: ${slug}`);
+          
+          // Redirect to home after 2 seconds
+          setTimeout(() => {
+            window.location.href = '/';
+          }, 2000);
+          
           setLoading(false);
           return;
         }

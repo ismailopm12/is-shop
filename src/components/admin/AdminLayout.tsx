@@ -24,9 +24,9 @@ const AdminLayout = ({ children }: { children: ReactNode }) => {
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full relative">
-        {/* Desktop Sidebar - Hidden on mobile */}
-        <div className="hidden md:block fixed md:relative z-20">
+      <div className="min-h-screen flex w-full">
+        {/* Desktop Sidebar - Always visible on desktop */}
+        <div className="hidden md:block">
           <AdminSidebar />
         </div>
 
@@ -41,7 +41,6 @@ const AdminLayout = ({ children }: { children: ReactNode }) => {
                 exit={{ opacity: 0 }}
                 className="fixed inset-0 bg-black/50 z-40 md:hidden"
                 onClick={() => setMobileMenuOpen(false)}
-                style={{ position: 'fixed' }}
               />
               
               {/* Mobile Sidebar */}
@@ -51,7 +50,6 @@ const AdminLayout = ({ children }: { children: ReactNode }) => {
                 exit={{ x: -300 }}
                 transition={{ type: "spring", damping: 25, stiffness: 200 }}
                 className="fixed left-0 top-0 bottom-0 w-[280px] max-w-[85vw] bg-card z-50 md:hidden shadow-2xl"
-                style={{ position: 'fixed', height: '100vh' }}
               >
                 <div className="h-full flex flex-col">
                   {/* Mobile Header */}
@@ -78,15 +76,18 @@ const AdminLayout = ({ children }: { children: ReactNode }) => {
 
         {/* Main Content */}
         <div className="flex-1 flex flex-col min-h-screen">
-          {/* Mobile Header */}
+          {/* Mobile & Desktop Header */}
           <header className="sticky top-0 z-30 h-14 flex items-center border-b bg-card px-3 md:px-4 gap-3 shadow-sm">
+            {/* Mobile Menu Button */}
             <button
               onClick={() => setMobileMenuOpen(true)}
               className="md:hidden p-2 hover:bg-accent rounded-lg transition-colors"
+              aria-label="Open menu"
             >
               <Menu className="h-5 w-5" />
             </button>
             
+            {/* Desktop Sidebar Trigger */}
             <SidebarTrigger className="hidden md:flex" />
             
             <div className="flex-1 min-w-0">
@@ -94,8 +95,6 @@ const AdminLayout = ({ children }: { children: ReactNode }) => {
                 Admin Panel
               </h1>
             </div>
-
-            {/* User Avatar/Profile could go here */}
           </header>
 
           {/* Main Content Area */}
