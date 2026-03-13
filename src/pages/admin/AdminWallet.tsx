@@ -346,36 +346,36 @@ const AdminWallet = () => {
 
   return (
     <AdminLayout>
-      <div className="space-y-5">
-        <h2 className="text-2xl font-bold text-foreground">ওয়ালেট ম্যানেজমেন্ট</h2>
+      <div className="space-y-6 md:space-y-8">
+        <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-foreground px-2">ওয়ালেট ম্যানেজমেন্ট</h2>
 
         {/* Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <Card className="card-shadow">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">মোট ব্যালেন্স</CardTitle>
-              <DollarSign className="h-5 w-5 text-primary" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+          <Card className="card-shadow border-l-4 border-l-primary">
+            <CardHeader className="flex flex-row items-center justify-between pb-2 px-4 md:px-6">
+              <CardTitle className="text-xs md:text-sm font-medium text-muted-foreground">মোট ব্যালেন্স</CardTitle>
+              <DollarSign className="h-5 w-5 md:h-6 md:w-6 text-primary" />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-foreground">৳{totalBalance.toFixed(2)}</div>
+            <CardContent className="px-4 md:px-6 pt-0 md:pt-2">
+              <div className="text-xl md:text-2xl lg:text-3xl font-bold text-foreground truncate">৳{totalBalance.toFixed(2)}</div>
             </CardContent>
           </Card>
-          <Card className="card-shadow">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">মোট ডিপোজিট</CardTitle>
-              <TrendingUp className="h-5 w-5 text-green-500" />
+          <Card className="card-shadow border-l-4 border-l-green-500">
+            <CardHeader className="flex flex-row items-center justify-between pb-2 px-4 md:px-6">
+              <CardTitle className="text-xs md:text-sm font-medium text-muted-foreground">মোট ডিপোজিট</CardTitle>
+              <TrendingUp className="h-5 w-5 md:h-6 md:w-6 text-green-500" />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-foreground">৳{totalDeposits.toFixed(2)}</div>
+            <CardContent className="px-4 md:px-6 pt-0 md:pt-2">
+              <div className="text-xl md:text-2xl lg:text-3xl font-bold text-foreground truncate">৳{totalDeposits.toFixed(2)}</div>
             </CardContent>
           </Card>
-          <Card className="card-shadow">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">পেন্ডিং ডিপোজিট</CardTitle>
-              <Wallet className="h-5 w-5 text-orange-500" />
+          <Card className="card-shadow border-l-4 border-l-orange-500">
+            <CardHeader className="flex flex-row items-center justify-between pb-2 px-4 md:px-6">
+              <CardTitle className="text-xs md:text-sm font-medium text-muted-foreground">পেন্ডিং ডিপোজিট</CardTitle>
+              <Wallet className="h-5 w-5 md:h-6 md:w-6 text-orange-500" />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-foreground">{pendingDeposits} টি</div>
+            <CardContent className="px-4 md:px-6 pt-0 md:pt-2">
+              <div className="text-xl md:text-2xl lg:text-3xl font-bold text-foreground truncate">{pendingDeposits} টি</div>
             </CardContent>
           </Card>
         </div>
@@ -383,22 +383,24 @@ const AdminWallet = () => {
         {/* User Wallets */}
         <Card>
           <CardHeader>
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-              <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5" /> ইউজার ওয়ালেট
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 px-3 md:px-6 py-4 md:py-6">
+              <CardTitle className="flex items-center gap-2 text-base md:text-lg lg:text-xl">
+                <Users className="h-5 w-5 md:h-6 md:w-6" /> ইউজার ওয়ালেট
               </CardTitle>
               <div className="relative w-full sm:w-64">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 md:h-5 md:w-5 text-muted-foreground" />
                 <Input
                   placeholder="নাম, ফোন বা ID দিয়ে সার্চ..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="pl-10"
+                  className="pl-10 h-10 md:h-11 min-h-[44px] text-sm md:text-base"
                 />
               </div>
             </div>
           </CardHeader>
           <CardContent className="p-0">
+            <div className="overflow-x-auto -mx-4 md:mx-0">
+              <div className="min-w-[700px] md:min-w-full px-4 md:px-0">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -443,6 +445,8 @@ const AdminWallet = () => {
                 )}
               </TableBody>
             </Table>
+              </div>
+            </div>
           </CardContent>
         </Card>
 
