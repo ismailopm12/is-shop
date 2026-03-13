@@ -1,4 +1,4 @@
-import { LayoutDashboard, Users, Package, ShoppingCart, ArrowLeft, Settings, Diamond, Ticket, Wallet, FileDown, Image, FileText, Smartphone, Coins, Globe, Megaphone } from "lucide-react";
+import { LayoutDashboard, Users, Package, ShoppingCart, ArrowLeft, Settings, Diamond, Ticket, Wallet, FileDown, Image, FileText, Smartphone, Coins, Globe, Megaphone, Database, Code, Link, MessageCircle } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
@@ -18,6 +18,7 @@ const items = [
   { title: "ড্যাশবোর্ড", url: "/admin", icon: LayoutDashboard },
   { title: "ইউজার", url: "/admin/users", icon: Users },
   { title: "প্রোডাক্ট", url: "/admin/products", icon: Package },
+  { title: "ক্যাটাগরি", url: "/admin/categories", icon: LayoutDashboard },
   { title: "প্যাকেজ", url: "/admin/packages", icon: Diamond },
   { title: "ভাউচার কোড", url: "/admin/vouchers", icon: Ticket },
   { title: "কয়েন", url: "/admin/coins", icon: Coins },
@@ -26,8 +27,12 @@ const items = [
   { title: "ডিজিটাল ফাইল", url: "/admin/digital-products", icon: FileDown },
   { title: "হিরো ব্যানার", url: "/admin/hero-banners", icon: Image },
   { title: "SMM প্রোডাক্ট", url: "/admin/smm-products", icon: Smartphone },
+  { title: "সোশ্যাল বাটন", url: "/admin/social-links", icon: Link },
+  { title: "WhatsApp নোটিফিকেশন", url: "/admin/whatsapp-notifications", icon: MessageCircle },
   { title: "SEO", url: "/admin/seo", icon: Globe },
   { title: "পপআপ", url: "/admin/popups", icon: Megaphone },
+  { title: "API সেটিংস", url: "/admin/api-settings", icon: Database },
+  { title: "ডেভেলপার", url: "/admin/developers", icon: Code },
   { title: "পেজ কন্টেন্ট", url: "/admin/pages", icon: FileText },
   { title: "সেটিংস", url: "/admin/settings", icon: Settings },
 ];

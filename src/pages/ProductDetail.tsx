@@ -21,6 +21,14 @@ const localImageMap: Record<string, string> = {
   "weekly-monthly": weeklyMonthly,
 };
 
+interface UserInfoField {
+  id: string;
+  label: string;
+  placeholder?: string;
+  required?: boolean;
+  type?: "text" | "email" | "number" | "tel";
+}
+
 interface Product {
   id: string;
   name: string;
@@ -28,8 +36,10 @@ interface Product {
   image: string | null;
   image_url: string | null;
   category: string;
+  category_id?: string;
   description: string | null;
   is_voucher: boolean;
+  user_info_fields?: UserInfoField[];
 }
 
 interface ProductVariant {
@@ -39,6 +49,10 @@ interface ProductVariant {
   price: number;
   reward_coins?: number;
   isFromDiamondPackages?: boolean; // Track if variant comes from diamond_packages table
+}
+
+interface UserInfoFormData {
+  [key: string]: string;
 }
 
 const ProductDetail = () => {
@@ -55,13 +69,17 @@ const ProductDetail = () => {
   const [viewCount, setViewCount] = useState(0);
   const [coinValue, setCoinValue] = useState<number>(0.10); // Default 1 coin = ৳0.10
   const [quantity, setQuantity] = useState(1); // Quantity selector
+  const [userInfoData, setUserInfoData] = useState<UserInfoFormData>({});
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [verifiedPlayerName, setVerifiedPlayerName] = useState<string | null>(null);
+  const [verificationError, setVerificationError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       const { data: prod } = await supabase
         .from("products")
-        .select("id, name, slug, image, image_url, category, description, is_voucher")
+        .select("id, name, slug, image, image_url, category, category_id, description, is_voucher, user_info_fields")
         .eq("slug", slug)
         .eq("is_active", true)
         .single();
@@ -158,6 +176,46 @@ const ProductDetail = () => {
     return "/placeholder.svg";
   };
 
+  const handleVerifyPlayer = async () => {
+    if (!playerId.trim()) {
+      toast.error("Player UID দিন");
+      return;
+    }
+
+    setIsVerifying(true);
+    setVerificationError(null);
+    setVerifiedPlayerName(null);
+
+    try {
+      // Using new API endpoint
+      const response = await fetch(`https://api.freefirecommunity.com/player?uid=${playerId}&region=SG`);
+      
+      if (!response.ok) {
+        throw new Error("ভেরিফিকেশন ব্যর্থ। সঠিক UID দিন।");
+      }
+
+      const data = await response.json();
+      console.log("API Response:", data);
+
+      // Check if API returns success and has player name
+      // Assuming response structure: { player: { name: "..." } } or similar
+      const playerName = data.player?.name || data.name || data.nickname;
+      
+      if (playerName) {
+        setVerifiedPlayerName(playerName);
+        toast.success(`✅ ভেরিফাইড! প্লেয়ার: ${playerName}`);
+      } else {
+        throw new Error("প্লেয়ার তথ্য পাওয়া যায়নি");
+      }
+    } catch (error) {
+      console.error("Verification error:", error);
+      setVerificationError(error instanceof Error ? error.message : "ভেরিফিকেশন ব্যর্থ");
+      toast.error("❌ ভুল Player UID অথবা API সমস্যা");
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -179,10 +237,19 @@ const ProductDetail = () => {
       toast.error("একটি ভ্যারিয়েন্ট সিলেক্ট করুন"); 
       return; 
     }
-    if (!product.is_voucher && !playerId.trim()) { 
-      console.error("Player ID required but not provided");
-      toast.error("Player UID দিন"); 
-      return; 
+    
+    // Validate dynamic user info fields
+    if (!product.is_voucher && product.user_info_fields && product.user_info_fields.length > 0) {
+      const missingFields = product.user_info_fields.filter(field => {
+        const value = userInfoData[field.id];
+        return field.required && (!value || !value.trim());
+      });
+      
+      if (missingFields.length > 0) {
+        const fieldNames = missingFields.map(f => f.label).join(', ');
+        toast.error(`Missing required fields: ${fieldNames}`);
+        return;
+      }
     }
 
     const variant = variants.find(v => v.id === selectedVariant) || null;
@@ -236,6 +303,7 @@ const ProductDetail = () => {
           amount: 0, // Free because paid with coins
           status: "completed", // Auto-complete wallet/coin payments
           payment_method: "coin",
+          user_info: userInfoData, // Add dynamic user info fields
         };
 
         console.log("Creating coin order with data:", orderData);
@@ -390,6 +458,7 @@ const ProductDetail = () => {
           amount,
           status: "completed", // Auto-complete wallet/coin payments
           payment_method: "wallet",
+          user_info: userInfoData, // Add dynamic user info fields
         };
 
         console.log("Creating wallet order with data:", orderData);
@@ -528,6 +597,7 @@ const ProductDetail = () => {
           is_voucher: product.is_voucher,
           full_name: profile?.display_name || "Customer",
           redirect_url: redirectUrl,
+          user_info: userInfoData, // Add dynamic user info fields
         };
 
         console.log("=== UDDOKTAPAY PAYMENT DEBUG ===");
@@ -635,38 +705,55 @@ const ProductDetail = () => {
               </div>
               <span className="text-sm text-muted-foreground">কিনে পান <span className="text-secondary font-bold">{variants.find(v => v.id === selectedVariant)?.reward_coins || 0}</span> Coins 🪙</span>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
               {variants.map((variant) => (
                 <button
                   key={variant.id}
                   onClick={() => setSelectedVariant(variant.id)}
-                  className={`relative flex flex-col items-start justify-between px-3 py-3 rounded-lg border transition bg-card ${
+                  className={`relative group flex flex-col items-center justify-center px-2 py-2.5 rounded-xl border transition-all duration-200 bg-gradient-to-br ${
                     selectedVariant === variant.id
-                      ? "border-primary shadow-sm bg-primary/5"
-                      : "border-border hover:border-primary/40"
-                  }`}
+                      ? "from-primary/20 to-primary/10 border-primary shadow-md scale-[1.02]"
+                      : "from-card to-card/80 border-border hover:border-primary/50 hover:shadow-sm hover:scale-[1.02]"
+                  } backdrop-blur-sm`}
                 >
-                  <div className="w-full mb-2">
-                    <div className="text-xs font-semibold text-foreground mb-0.5 truncate">
+                  {/* Glossy Effect */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-xl pointer-events-none"></div>
+                  
+                  {/* Content */}
+                  <div className="w-full text-center relative z-10">
+                    <div className="text-xs font-bold text-foreground mb-0.5 truncate">
                       {variant.value}
                     </div>
                     {variant.name && variant.name.trim() !== "" && (
-                      <div className="text-[10px] text-muted-foreground truncate">
+                      <div className="text-[9px] text-muted-foreground truncate">
                         {variant.name}
                       </div>
                     )}
                   </div>
-                  <div className="flex items-center justify-between w-full">
-                    <span className="text-primary font-bold text-xs">৳{variant.price}</span>
+                  
+                  {/* Price & Coins */}
+                  <div className="flex items-center gap-1 mt-1.5 w-full justify-center relative z-10">
+                    <span className="text-primary font-extrabold text-xs">৳{variant.price}</span>
                     {variant.reward_coins > 0 && (
-                      <Badge variant="secondary" className="text-[9px] px-1 py-0 h-4">
-                        +{variant.reward_coins} 🪙
+                      <Badge className="text-[8px] px-1 py-0 h-3.5 bg-gradient-to-r from-secondary/90 to-secondary font-bold shadow-sm">
+                        +{variant.reward_coins}🪙
                       </Badge>
                     )}
                   </div>
+                  
+                  {/* Coin Value */}
                   {coinValue > 0 && (
-                    <div className="text-[9px] text-muted-foreground text-center w-full bg-accent/50 rounded py-0.5 mt-1">
-                      {(variant.price / coinValue).toFixed(0)} 🪙 = ৳{variant.price}
+                    <div className="text-[8px] text-muted-foreground text-center w-full bg-accent/40 rounded py-0.5 mt-1 font-medium relative z-10">
+                      {Math.round(variant.price / coinValue)}🪙
+                    </div>
+                  )}
+                  
+                  {/* Selected Indicator */}
+                  {selectedVariant === variant.id && (
+                    <div className="absolute -top-1 -right-1 w-4 h-4 bg-primary rounded-full flex items-center justify-center shadow-md animate-in zoom-in">
+                      <svg className="w-2.5 h-2.5 text-primary-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path>
+                      </svg>
                     </div>
                   )}
                 </button>
@@ -718,7 +805,7 @@ const ProductDetail = () => {
           </div>
         </section>
 
-        {/* Step 2: Account Info */}
+        {/* Step 2: Account Info - Dynamic Fields */}
         {!product.is_voucher && (
           <section className="bg-card rounded-xl p-4 card-shadow">
             <div className="flex items-center justify-between mb-4">
@@ -726,9 +813,99 @@ const ProductDetail = () => {
                 <span className="bg-primary text-primary-foreground rounded-full w-7 h-7 flex items-center justify-center text-sm font-bold">{product.is_voucher ? "2" : "3"}</span>
                 <h2 className="font-bold">Account Info</h2>
               </div>
+              {product.user_info_fields && product.user_info_fields.length > 0 && (
+                <Badge variant="secondary" className="text-xs">
+                  {product.user_info_fields.length} field{product.user_info_fields.length > 1 ? 's' : ''} required
+                </Badge>
+              )}
             </div>
-            <label className="text-sm font-medium mb-1 block">Player UID</label>
-            <Input placeholder="Player UID" value={playerId} onChange={e => setPlayerId(e.target.value)} />
+            
+            {/* Dynamic Fields from Admin */}
+            {product.user_info_fields && product.user_info_fields.length > 0 ? (
+              <div className="space-y-4">
+                {product.user_info_fields.map((field, index) => (
+                  <div key={field.id || index}>
+                    <label className="text-sm font-medium mb-1 block">
+                      {field.label}
+                      {field.required && <span className="text-destructive ml-1">*</span>}
+                    </label>
+                    <Input
+                      type={field.type || 'text'}
+                      placeholder={field.placeholder || `Enter ${field.label.toLowerCase()}`}
+                      value={userInfoData[field.id] || ''}
+                      onChange={(e) => setUserInfoData({
+                        ...userInfoData,
+                        [field.id]: e.target.value
+                      })}
+                      required={field.required}
+                    />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              /* Fallback - Default Player UID field with Verification */
+              <div>
+                <label className="text-sm font-medium mb-1 block">Player UID</label>
+                <div className="flex gap-2">
+                  <Input 
+                    placeholder="Player UID" 
+                    value={playerId} 
+                    onChange={(e) => {
+                      setPlayerId(e.target.value);
+                      setUserInfoData({ ...userInfoData, game_uid: e.target.value });
+                      // Clear verification when UID changes
+                      setVerifiedPlayerName(null);
+                      setVerificationError(null);
+                    }} 
+                    className="flex-1"
+                  />
+                  <Button
+                    onClick={handleVerifyPlayer}
+                    disabled={isVerifying || !playerId.trim()}
+                    className="whitespace-nowrap"
+                  >
+                    {isVerifying ? (
+                      <>
+                        <svg className="animate-spin h-4 w-4 mr-2" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                        </svg>
+                        ভেরিফাই...
+                      </>
+                    ) : (
+                      <>ভেরিফাই</>
+                    )}
+                  </Button>
+                </div>
+                
+                {/* Verification Status */}
+                {verifiedPlayerName && (
+                  <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2">
+                    <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span className="text-sm font-medium text-green-800">
+                      ✅ প্লেয়ার ভেরিফাইড: <strong>{verifiedPlayerName}</strong>
+                    </span>
+                  </div>
+                )}
+                
+                {verificationError && (
+                  <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2">
+                    <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span className="text-sm font-medium text-red-800">
+                      ❌ {verificationError}
+                    </span>
+                  </div>
+                )}
+                
+                <p className="text-xs text-muted-foreground mt-2">
+                  Enter your game player ID and verify to see real name
+                </p>
+              </div>
+            )}
           </section>
         )}
 

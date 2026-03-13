@@ -49,9 +49,9 @@ const HeroBanner = () => {
   if (banners.length === 0) {
     const fallback = settings.banner_url || "";
     return (
-      <div className="px-4 mt-3">
-        <div className="rounded-xl overflow-hidden card-shadow">
-          <img src={fallback || banner} alt="Banner" className="w-full h-40 sm:h-56 object-cover" />
+      <div className="px-4 mt-4 mb-6">
+        <div className="rounded-2xl overflow-hidden shadow-xl hover:shadow-2xl transition-shadow duration-300">
+          <img src={fallback || banner} alt="Banner" className="w-full h-44 sm:h-56 object-cover" />
         </div>
       </div>
     );
@@ -60,8 +60,8 @@ const HeroBanner = () => {
   const currentBanner = banners[current];
 
   const content = (
-    <div className="px-4 mt-3">
-      <div className="rounded-xl overflow-hidden card-shadow relative">
+    <div className="px-4 mt-4 mb-6">
+      <div className="rounded-2xl overflow-hidden shadow-xl hover:shadow-2xl transition-shadow duration-300 relative">
         <img
           src={currentBanner.image_url}
           alt={currentBanner.title || "Banner"}

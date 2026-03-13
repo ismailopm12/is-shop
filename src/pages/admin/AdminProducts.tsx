@@ -9,9 +9,19 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { Plus, Edit, Trash2 } from "lucide-react";
 import ImageUpload from "@/components/admin/ImageUpload";
+
+interface UserInfoField {
+  id: string;
+  label: string;
+  placeholder?: string;
+  required?: boolean;
+  type?: "text" | "email" | "number" | "tel";
+}
 
 interface Product {
   id: string;
@@ -20,38 +30,89 @@ interface Product {
   image: string | null;
   image_url: string | null;
   category: string;
+  category_id?: string;
   description: string | null;
   is_active: boolean;
   is_voucher: boolean;
+  user_info_fields?: UserInfoField[];
   created_at: string;
+}
+
+interface Category {
+  id: string;
+  name: string;
+  slug: string;
 }
 
 const AdminProducts = () => {
   const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [showAdd, setShowAdd] = useState(false);
   const [editProduct, setEditProduct] = useState<Product | null>(null);
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
   const [imageUrl, setImageUrl] = useState("");
-  const [category, setCategory] = useState("FREE FIRE");
+  const [categoryId, setCategoryId] = useState<string>("");
+  const [categoryText, setCategoryText] = useState("FREE FIRE");
   const [description, setDescription] = useState("");
   const [isVoucher, setIsVoucher] = useState(false);
+  const [userInfoFields, setUserInfoFields] = useState<UserInfoField[]>([]);
+  const [showAddField, setShowAddField] = useState(false);
+  const [newFieldName, setNewFieldName] = useState("");
+  const [newFieldLabel, setNewFieldLabel] = useState("");
+  const [newFieldType, setNewFieldType] = useState<"text" | "email" | "number" | "tel">("text");
+  const [newFieldPlaceholder, setNewFieldPlaceholder] = useState("");
+  const [newFieldRequired, setNewFieldRequired] = useState(true);
+  
+  const predefinedFieldOptions = [
+    { id: "game_uid", label: "Game UID", placeholder: "Enter your game UID", type: "text" as const },
+    { id: "whatsapp", label: "WhatsApp Number", placeholder: "+880...", type: "tel" as const },
+    { id: "email", label: "Gmail/Email", placeholder: "your@email.com", type: "email" as const },
+    { id: "phone", label: "Phone Number", placeholder: "017...", type: "tel" as const },
+    { id: "username", label: "Username", placeholder: "Your username", type: "text" as const },
+  ];
 
   const fetchProducts = async () => {
     const { data } = await supabase.from("products").select("*").order("created_at", { ascending: false });
     if (data) setProducts(data as Product[]);
   };
+  
+  const fetchCategories = async () => {
+    const { data, error } = await supabase.from("product_categories" as any).select("id, name, slug");
+    if (error) {
+      console.error("Error fetching categories:", error);
+      return;
+    }
+    if (data) setCategories(data as Category[]);
+  };
 
-  useEffect(() => { fetchProducts(); }, []);
+  useEffect(() => { 
+    fetchProducts(); 
+    fetchCategories();
+  }, []);
 
   const resetForm = () => {
-    setName(""); setSlug(""); setImageUrl(""); setCategory("FREE FIRE"); setDescription(""); setIsVoucher(false);
+    setName(""); 
+    setSlug(""); 
+    setImageUrl(""); 
+    setCategoryId("");
+    setCategoryText("FREE FIRE"); 
+    setDescription(""); 
+    setIsVoucher(false);
+    setUserInfoFields([]);
   };
 
   const handleAdd = async () => {
     if (!name || !slug) { toast.error("নাম ও স্লাগ দিন"); return; }
     const { error } = await supabase.from("products").insert({
-      name, slug, image_url: imageUrl || null, category, description, is_voucher: isVoucher
+      name, 
+      slug, 
+      image_url: imageUrl || null, 
+      category: categoryText, 
+      category_id: categoryId || null,
+      description, 
+      is_voucher: isVoucher,
+      user_info_fields: userInfoFields.length > 0 ? userInfoFields : null
     });
     if (error) { toast.error("যোগ করা যায়নি: " + error.message); return; }
     toast.success("প্রোডাক্ট যোগ হয়েছে");
@@ -62,7 +123,14 @@ const AdminProducts = () => {
   const handleEdit = async () => {
     if (!editProduct) return;
     const { error } = await supabase.from("products").update({
-      name, slug, image_url: imageUrl || null, category, description, is_voucher: isVoucher
+      name, 
+      slug, 
+      image_url: imageUrl || null, 
+      category: categoryText, 
+      category_id: categoryId || null,
+      description, 
+      is_voucher: isVoucher,
+      user_info_fields: userInfoFields.length > 0 ? userInfoFields : null
     }).eq("id", editProduct.id);
     if (error) { toast.error("আপডেট ব্যর্থ: " + error.message); return; }
     toast.success("প্রোডাক্ট আপডেট হয়েছে");
@@ -84,8 +152,14 @@ const AdminProducts = () => {
 
   const openEdit = (p: Product) => {
     setEditProduct(p);
-    setName(p.name); setSlug(p.slug); setImageUrl(p.image_url || "");
-    setCategory(p.category); setDescription(p.description || ""); setIsVoucher(p.is_voucher);
+    setName(p.name); 
+    setSlug(p.slug); 
+    setImageUrl(p.image_url || "");
+    setCategoryText(p.category || "FREE FIRE"); 
+    setCategoryId(p.category_id || "");
+    setDescription(p.description || ""); 
+    setIsVoucher(p.is_voucher);
+    setUserInfoFields(p.user_info_fields || []);
   };
 
   return (
@@ -107,17 +181,184 @@ const AdminProducts = () => {
                   <ImageUpload folder="products" currentUrl={imageUrl} onUpload={setImageUrl} />
                   <Input placeholder="অথবা ইমেজ URL দিন" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} className="mt-2" />
                 </div>
-                <Input placeholder="ক্যাটাগরি" value={category} onChange={(e) => setCategory(e.target.value)} />
+                <div>
+                  <label className="text-sm font-medium text-foreground block mb-1">ক্যাটাগরি সিলেক্ট করুন</label>
+                  <Select value={categoryId} onValueChange={(val) => {
+                    setCategoryId(val);
+                    const cat = categories.find(c => c.id === val);
+                    if (cat) setCategoryText(cat.name);
+                  }}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="ক্যাটাগরি বাছাই করুন" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categories.map(cat => (
+                        <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
                 <Textarea placeholder="প্রোডাক্ট ডেসক্রিপশন" value={description} onChange={(e) => setDescription(e.target.value)} rows={4} />
                 <div className="flex items-center justify-between">
                   <label className="text-sm font-medium text-foreground">ভাউচার প্রোডাক্ট</label>
                   <Switch checked={isVoucher} onCheckedChange={setIsVoucher} />
+                </div>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-medium text-foreground">ব্যবহারকারীর তথ্য ফিল্ডসমূহ</label>
+                    <Button 
+                      type="button" 
+                      size="sm" 
+                      variant="outline"
+                      onClick={() => setShowAddField(true)}
+                      className="h-8"
+                    >
+                      + Add Field
+                    </Button>
+                  </div>
+                  
+                  {/* Predefined fields quick add */}
+                  <div className="text-xs text-muted-foreground mb-2">Quick add:</div>
+                  <div className="flex flex-wrap gap-2">
+                    {predefinedFieldOptions.map(field => (
+                      <Button
+                        key={field.id}
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        disabled={userInfoFields.some(f => f.id === field.id)}
+                        onClick={() => {
+                          setUserInfoFields([
+                            ...userInfoFields,
+                            {
+                              id: field.id,
+                              label: field.label,
+                              placeholder: field.placeholder,
+                              type: field.type,
+                              required: true
+                            }
+                          ]);
+                        }}
+                        className="text-xs h-7"
+                      >
+                        + {field.label}
+                      </Button>
+                    ))}
+                  </div>
+                  
+                  {/* Added fields display */}
+                  {userInfoFields.length > 0 && (
+                    <div className="space-y-2 mt-3">
+                      {userInfoFields.map((field, index) => (
+                        <div key={field.id || index} className="flex items-center justify-between p-2 border rounded bg-card">
+                          <div className="flex-1">
+                            <div className="font-medium text-sm">{field.label}</div>
+                            <div className="text-xs text-muted-foreground">
+                              Type: {field.type || 'text'} | Placeholder: {field.placeholder || 'N/A'}
+                            </div>
+                          </div>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="ghost"
+                            className="text-destructive h-8"
+                            onClick={() => {
+                              setUserInfoFields(userInfoFields.filter((_, i) => i !== index));
+                            }}
+                          >
+                            Remove
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <Button onClick={handleAdd} className="w-full">যোগ করুন</Button>
               </div>
             </DialogContent>
           </Dialog>
         </div>
+
+        {/* Add Custom Field Dialog */}
+        <Dialog open={showAddField} onOpenChange={(o) => { setShowAddField(o); if (!o) { setNewFieldName(""); setNewFieldLabel(""); setNewFieldType("text"); setNewFieldPlaceholder(""); setNewFieldRequired(true); } }}>
+          <DialogContent>
+            <DialogHeader><DialogTitle>Add Custom User Info Field</DialogTitle></DialogHeader>
+            <div className="space-y-3">
+              <div>
+                <label className="text-sm font-medium text-foreground block mb-1">Field ID (lowercase, no spaces)</label>
+                <Input 
+                  placeholder="e.g., game_uid, whatsapp" 
+                  value={newFieldName} 
+                  onChange={(e) => setNewFieldName(e.target.value.toLowerCase().replace(/\s+/g, '_'))} 
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-foreground block mb-1">Field Label (display name)</label>
+                <Input 
+                  placeholder="e.g., Game UID, WhatsApp Number" 
+                  value={newFieldLabel} 
+                  onChange={(e) => setNewFieldLabel(e.target.value)} 
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-foreground block mb-1">Field Type</label>
+                <Select value={newFieldType} onValueChange={(val: any) => setNewFieldType(val)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="text">Text</SelectItem>
+                    <SelectItem value="email">Email</SelectItem>
+                    <SelectItem value="number">Number</SelectItem>
+                    <SelectItem value="tel">Phone/Tel</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-foreground block mb-1">Placeholder Text</label>
+                <Input 
+                  placeholder="e.g., Enter your UID" 
+                  value={newFieldPlaceholder} 
+                  onChange={(e) => setNewFieldPlaceholder(e.target.value)} 
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <Switch 
+                  checked={newFieldRequired} 
+                  onCheckedChange={setNewFieldRequired} 
+                />
+                <label className="text-sm">Required field</label>
+              </div>
+              <Button 
+                onClick={() => {
+                  if (newFieldName && newFieldLabel) {
+                    setUserInfoFields([
+                      ...userInfoFields,
+                      {
+                        id: newFieldName,
+                        label: newFieldLabel,
+                        placeholder: newFieldPlaceholder,
+                        type: newFieldType,
+                        required: newFieldRequired
+                      }
+                    ]);
+                    setShowAddField(false);
+                    setNewFieldName("");
+                    setNewFieldLabel("");
+                    setNewFieldType("text");
+                    setNewFieldPlaceholder("");
+                    setNewFieldRequired(true);
+                  } else {
+                    toast.error("Field ID and Label are required");
+                  }
+                }} 
+                className="w-full"
+              >
+                Add Field
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
 
         <Dialog open={!!editProduct} onOpenChange={(o) => { if (!o) { setEditProduct(null); resetForm(); } }}>
           <DialogContent>
@@ -130,11 +371,99 @@ const AdminProducts = () => {
                 <ImageUpload folder="products" currentUrl={imageUrl} onUpload={setImageUrl} />
                 <Input placeholder="অথবা ইমেজ URL দিন" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} className="mt-2" />
               </div>
-              <Input placeholder="ক্যাটাগরি" value={category} onChange={(e) => setCategory(e.target.value)} />
+              <div>
+                <label className="text-sm font-medium text-foreground block mb-1">ক্যাটাগরি সিলেক্ট করুন</label>
+                <Select value={categoryId} onValueChange={(val) => {
+                  setCategoryId(val);
+                  const cat = categories.find(c => c.id === val);
+                  if (cat) setCategoryText(cat.name);
+                }}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="ক্যাটাগরি বাছাই করুন" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories.map(cat => (
+                      <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
               <Textarea placeholder="প্রোডাক্ট ডেসক্রিপশন" value={description} onChange={(e) => setDescription(e.target.value)} rows={4} />
               <div className="flex items-center justify-between">
                 <label className="text-sm font-medium text-foreground">ভাউচার প্রোডাক্ট</label>
                 <Switch checked={isVoucher} onCheckedChange={setIsVoucher} />
+              </div>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-medium text-foreground">ব্যবহারকারীর তথ্য ফিল্ডসমূহ</label>
+                  <Button 
+                    type="button" 
+                    size="sm" 
+                    variant="outline"
+                    onClick={() => {
+                      setShowAddField(true);
+                    }}
+                    className="h-8"
+                  >
+                    + Add Field
+                  </Button>
+                </div>
+                
+                {/* Predefined fields quick add */}
+                <div className="text-xs text-muted-foreground mb-2">Quick add:</div>
+                <div className="flex flex-wrap gap-2">
+                  {predefinedFieldOptions.map(field => (
+                    <Button
+                      key={field.id}
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      disabled={userInfoFields.some(f => f.id === field.id)}
+                      onClick={() => {
+                        setUserInfoFields([
+                          ...userInfoFields,
+                          {
+                            id: field.id,
+                            label: field.label,
+                            placeholder: field.placeholder,
+                            type: field.type,
+                            required: true
+                          }
+                        ]);
+                      }}
+                      className="text-xs h-7"
+                    >
+                      + {field.label}
+                    </Button>
+                  ))}
+                </div>
+                
+                {/* Added fields display */}
+                {userInfoFields.length > 0 && (
+                  <div className="space-y-2 mt-3">
+                    {userInfoFields.map((field, index) => (
+                      <div key={field.id || index} className="flex items-center justify-between p-2 border rounded bg-card">
+                        <div className="flex-1">
+                          <div className="font-medium text-sm">{field.label}</div>
+                          <div className="text-xs text-muted-foreground">
+                            Type: {field.type || 'text'} | Placeholder: {field.placeholder || 'N/A'}
+                          </div>
+                        </div>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          className="text-destructive h-8"
+                          onClick={() => {
+                            setUserInfoFields(userInfoFields.filter((_, i) => i !== index));
+                          }}
+                        >
+                          Remove
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
               <Button onClick={handleEdit} className="w-full">আপডেট করুন</Button>
             </div>

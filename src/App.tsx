@@ -20,6 +20,7 @@ import NotFound from "./pages/NotFound";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminProducts from "./pages/admin/AdminProducts";
+import AdminCategories from "./pages/admin/AdminCategories";
 import AdminOrders from "./pages/admin/AdminOrders";
 import AdminSiteSettings from "./pages/admin/AdminSiteSettings";
 import AdminPackages from "./pages/admin/AdminPackages";
@@ -42,6 +43,11 @@ import AdminSmmProducts from "./pages/admin/AdminSmmProducts";
 import AdminCoins from "./pages/admin/AdminCoins";
 import AdminSeo from "./pages/admin/AdminSeo";
 import AdminPopups from "./pages/admin/AdminPopups";
+import AdminAPISettings from "./pages/admin/AdminAPISettings";
+import AdminDevelopers from "./pages/admin/AdminDevelopers";
+import DeveloperDetail from "./pages/DeveloperDetail";
+import AdminSocialLinks from "./pages/admin/AdminSocialLinks";
+import AdminWhatsAppNotifications from "./pages/admin/AdminWhatsAppNotifications";
 
 const queryClient = new QueryClient();
 
@@ -78,6 +84,7 @@ const App = () => (
               <Route path="/admin" element={<AdminDashboard />} />
               <Route path="/admin/users" element={<AdminUsers />} />
               <Route path="/admin/products" element={<AdminProducts />} />
+              <Route path="/admin/categories" element={<AdminCategories />} />
               <Route path="/admin/orders" element={<AdminOrders />} />
               <Route path="/admin/settings" element={<AdminSiteSettings />} />
               <Route path="/admin/packages" element={<AdminPackages />} />
@@ -90,6 +97,11 @@ const App = () => (
               <Route path="/admin/coins" element={<AdminCoins />} />
               <Route path="/admin/seo" element={<AdminSeo />} />
               <Route path="/admin/popups" element={<AdminPopups />} />
+              <Route path="/admin/api-settings" element={<AdminAPISettings />} />
+              <Route path="/admin/developers" element={<AdminDevelopers />} />
+              <Route path="/developer/:id" element={<DeveloperDetail />} />
+              <Route path="/admin/social-links" element={<AdminSocialLinks />} />
+              <Route path="/admin/whatsapp-notifications" element={<AdminWhatsAppNotifications />} />
               <Route path="/payment-callback" element={<PaymentCallback />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
