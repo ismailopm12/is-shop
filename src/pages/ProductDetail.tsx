@@ -78,22 +78,39 @@ const ProductDetail = () => {
     const fetchData = async () => {
       setLoading(true);
       
-      // Generate session ID for view tracking
-      const sessionId = sessionStorage.getItem('view_session_id') || 
-                       crypto.randomUUID();
-      sessionStorage.setItem('view_session_id', sessionId);
-      
-      const { data: prod } = await supabase
-        .from("products")
-        .select("id, name, slug, image, image_url, category, description, is_voucher, user_info_fields, view_count")
-        .eq("slug", slug)
-        .eq("is_active", true)
-        .single();
+      try {
+        // Generate session ID for view tracking
+        const sessionId = sessionStorage.getItem('view_session_id') || 
+                         crypto.randomUUID();
+        sessionStorage.setItem('view_session_id', sessionId);
+        
+        // Fetch product with timeout
+        const productPromise = supabase
+          .from("products")
+          .select("id, name, slug, image, image_url, category, description, is_voucher, user_info_fields, view_count")
+          .eq("slug", slug)
+          .eq("is_active", true)
+          .single();
+        
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Request timeout')), 10000)
+        );
+        
+        const { data: prod, error: productError } = await Promise.race([
+          productPromise,
+          timeoutPromise
+        ]) as any;
 
-      if (prod) {
+        if (productError || !prod) {
+          console.error("Product fetch error:", productError);
+          toast.error("প্রোডাক্ট পাওয়া যায়নি");
+          setLoading(false);
+          return;
+        }
+
         setProduct(prod as Product);
         
-        // Track view with database function
+        // Track view with database function (non-blocking)
         try {
           await supabase.rpc('increment_product_view', {
             p_product_id: prod.id,
@@ -110,14 +127,19 @@ const ProductDetail = () => {
           setViewCount(randomViewers);
         }
 
-        // Fetch coin settings
-        const { data: coinSettings } = await supabase
-          .from("coin_settings")
-          .select("coin_value")
-          .single();
-        
-        if (coinSettings) {
-          setCoinValue(parseFloat(coinSettings.coin_value.toString()));
+        // Fetch coin settings with timeout
+        try {
+          const { data: coinSettings } = await supabase
+            .from("coin_settings")
+            .select("coin_value")
+            .single();
+          
+          if (coinSettings) {
+            setCoinValue(parseFloat(coinSettings.coin_value.toString()));
+          }
+        } catch (error) {
+          console.error("Error fetching coin settings:", error);
+          // Continue without coin settings
         }
 
         // Try to fetch product_variants first (new system)
@@ -183,8 +205,13 @@ const ProductDetail = () => {
           .neq("slug", slug)
           .limit(6);
         if (related) setRelatedProducts(related as Product[]);
+        
+        setLoading(false);
+      } catch (error) {
+        console.error("Fetch error:", error);
+        toast.error("প্রোডাক্ট লোড করতে সমস্যা হয়েছে");
+        setLoading(false);
       }
-      setLoading(false);
     };
     fetchData();
     

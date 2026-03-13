@@ -25,8 +25,8 @@ const AdminLayout = ({ children }: { children: ReactNode }) => {
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full relative">
-        {/* Desktop Sidebar */}
-        <div className="hidden md:block">
+        {/* Desktop Sidebar - Hidden on mobile */}
+        <div className="hidden md:block fixed md:relative z-20">
           <AdminSidebar />
         </div>
 
@@ -41,6 +41,7 @@ const AdminLayout = ({ children }: { children: ReactNode }) => {
                 exit={{ opacity: 0 }}
                 className="fixed inset-0 bg-black/50 z-40 md:hidden"
                 onClick={() => setMobileMenuOpen(false)}
+                style={{ position: 'fixed' }}
               />
               
               {/* Mobile Sidebar */}
@@ -50,21 +51,23 @@ const AdminLayout = ({ children }: { children: ReactNode }) => {
                 exit={{ x: -300 }}
                 transition={{ type: "spring", damping: 25, stiffness: 200 }}
                 className="fixed left-0 top-0 bottom-0 w-[280px] max-w-[85vw] bg-card z-50 md:hidden shadow-2xl"
+                style={{ position: 'fixed', height: '100vh' }}
               >
                 <div className="h-full flex flex-col">
                   {/* Mobile Header */}
-                  <div className="h-14 flex items-center justify-between px-4 border-b">
+                  <div className="h-14 flex items-center justify-between px-4 border-b flex-shrink-0">
                     <h1 className="text-lg font-bold text-foreground">Admin Panel</h1>
                     <button
                       onClick={() => setMobileMenuOpen(false)}
                       className="p-2 hover:bg-accent rounded-lg transition-colors"
+                      aria-label="Close menu"
                     >
                       <X className="h-5 w-5" />
                     </button>
                   </div>
                   
-                  {/* Sidebar Content */}
-                  <div className="flex-1 overflow-y-auto">
+                  {/* Sidebar Content - Scrollable */}
+                  <div className="flex-1 overflow-y-auto overflow-x-hidden">
                     <AdminSidebar />
                   </div>
                 </div>
