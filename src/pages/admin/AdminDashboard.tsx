@@ -46,19 +46,19 @@ const AdminDashboard = () => {
 
   return (
     <AdminLayout>
-      <div className="space-y-6">
-        <h2 className="text-2xl font-bold text-foreground">ড্যাশবোর্ড</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="space-y-4 md:space-y-6">
+        <h2 className="text-xl md:text-2xl font-bold text-foreground px-2 md:px-0">ড্যাশবোর্ড</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
           {cards.map((card) => (
             <Card key={card.title} className="card-shadow">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
+              <CardHeader className="flex flex-row items-center justify-between pb-2 px-3 md:px-6">
+                <CardTitle className="text-xs md:text-sm font-medium text-muted-foreground">
                   {card.title}
                 </CardTitle>
-                <card.icon className={`h-5 w-5 ${card.color}`} />
+                <card.icon className={`h-4 w-4 md:h-5 md:w-5 ${card.color}`} />
               </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-foreground">{card.value}</div>
+              <CardContent className="px-3 md:px-6 pt-0 md:pt-2">
+                <div className="text-lg md:text-2xl font-bold text-foreground truncate">{card.value}</div>
               </CardContent>
             </Card>
           ))}
