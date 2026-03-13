@@ -1,35 +1,17 @@
-import { ReactNode, useState, useEffect } from "react";
+import { ReactNode } from "react";
 import { Navigate } from "react-router-dom";
-import { SidebarProvider, SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AdminSidebar } from "./AdminSidebar";
 import { useAdminCheck } from "@/hooks/useAdminCheck";
-import { Menu, X } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
 
 // Inner component to control sidebar state
-function AdminContent({ children, mobileMenuOpen, setMobileMenuOpen }: { 
-  children: ReactNode; 
-  mobileMenuOpen: boolean;
-  setMobileMenuOpen: (open: boolean) => void;
-}) {
-  const { openMobile, setOpenMobile } = useSidebar();
-
-  // Sync our state with sidebar's internal state
-  useEffect(() => {
-    if (mobileMenuOpen && !openMobile) {
-      setOpenMobile(true);
-    }
-  }, [mobileMenuOpen, openMobile, setOpenMobile]);
-
+function AdminContent({ children }: { children: ReactNode }) {
   return (
     <>
-      {/* Mobile Header */}
-      <header className="sticky top-0 z-30 h-14 flex items-center border-b bg-card px-3 md:px-4 gap-3 shadow-sm">
-        {/* Mobile Menu Button - TRIGGERS SIDEBAR */}
-        <SidebarTrigger className="md:hidden" />
-        
-        {/* Desktop Sidebar Trigger */}
-        <SidebarTrigger className="hidden md:flex" />
+      {/* Header - Always visible with trigger */}
+      <header className="sticky top-0 z-50 h-14 flex items-center border-b bg-card px-4 gap-3 shadow-sm flex-shrink-0">
+        {/* Sidebar Trigger - Shows hamburger on mobile, regular trigger on desktop */}
+        <SidebarTrigger className="h-9 w-9" />
         
         <div className="flex-1 min-w-0">
           <h1 className="text-base md:text-lg font-semibold text-foreground truncate">
@@ -38,9 +20,9 @@ function AdminContent({ children, mobileMenuOpen, setMobileMenuOpen }: {
         </div>
       </header>
 
-      {/* Main Content Area */}
-      <main className="flex-1 p-3 md:p-6 bg-background overflow-x-hidden w-full">
-        <div className="w-full mx-auto">
+      {/* Main Content Area - Full width, proper padding */}
+      <main className="flex-1 p-3 md:p-6 lg:p-8 bg-background overflow-x-hidden w-full">
+        <div className="w-full max-w-[1920px] mx-auto">
           {children}
         </div>
       </main>
@@ -50,7 +32,6 @@ function AdminContent({ children, mobileMenuOpen, setMobileMenuOpen }: {
 
 const AdminLayout = ({ children }: { children: ReactNode }) => {
   const { isAdmin, loading } = useAdminCheck();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   if (loading) {
     return (
@@ -67,16 +48,11 @@ const AdminLayout = ({ children }: { children: ReactNode }) => {
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-background">
-        {/* Desktop Sidebar - Fixed position */}
-        <div className="hidden md:block sticky top-0 h-screen">
-          <AdminSidebar />
-        </div>
+        {/* Sidebar - Responsive on all screen sizes */}
+        <AdminSidebar />
 
-        {/* Mobile & Desktop Content */}
-        <AdminContent 
-          mobileMenuOpen={mobileMenuOpen} 
-          setMobileMenuOpen={setMobileMenuOpen}
-        >
+        {/* Content Area */}
+        <AdminContent>
           {children}
         </AdminContent>
       </div>
