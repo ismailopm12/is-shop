@@ -346,36 +346,36 @@ const AdminWallet = () => {
 
   return (
     <AdminLayout>
-      <div className="space-y-6 md:space-y-8 w-full">
-        <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-foreground">ওয়ালেট ম্যানেজমেন্ট</h2>
+      <div className="space-y-4 md:space-y-6 w-full">
+        <h2 className="text-xl md:text-2xl lg:text-3xl font-bold text-foreground">ওয়ালেট ম্যানেজমেন্ট</h2>
 
         {/* Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 w-full">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4 w-full">
           <Card className="card-shadow border-l-4 border-l-primary">
-            <CardHeader className="flex flex-row items-center justify-between pb-3 px-4 md:px-6">
+            <CardHeader className="flex flex-row items-center justify-between pb-2 px-3 md:px-4">
               <CardTitle className="text-xs md:text-sm font-medium text-muted-foreground">মোট ব্যালেন্স</CardTitle>
-              <DollarSign className="h-5 w-5 md:h-6 md:w-6 text-primary" />
+              <DollarSign className="h-4 w-4 md:h-5 md:w-5 text-primary" />
             </CardHeader>
-            <CardContent className="px-4 md:px-6 pt-0 md:pt-2">
-              <div className="text-xl md:text-2xl lg:text-3xl font-bold text-foreground truncate">৳{totalBalance.toFixed(2)}</div>
+            <CardContent className="px-3 md:px-4 pt-0 md:pt-2">
+              <div className="text-lg md:text-xl lg:text-2xl font-bold text-foreground truncate">৳{totalBalance.toFixed(2)}</div>
             </CardContent>
           </Card>
           <Card className="card-shadow border-l-4 border-l-green-500">
-            <CardHeader className="flex flex-row items-center justify-between pb-3 px-4 md:px-6">
+            <CardHeader className="flex flex-row items-center justify-between pb-2 px-3 md:px-4">
               <CardTitle className="text-xs md:text-sm font-medium text-muted-foreground">মোট ডিপোজিট</CardTitle>
-              <TrendingUp className="h-5 w-5 md:h-6 md:w-6 text-green-500" />
+              <TrendingUp className="h-4 w-4 md:h-5 md:w-5 text-green-500" />
             </CardHeader>
-            <CardContent className="px-4 md:px-6 pt-0 md:pt-2">
-              <div className="text-xl md:text-2xl lg:text-3xl font-bold text-foreground truncate">৳{totalDeposits.toFixed(2)}</div>
+            <CardContent className="px-3 md:px-4 pt-0 md:pt-2">
+              <div className="text-lg md:text-xl lg:text-2xl font-bold text-foreground truncate">৳{totalDeposits.toFixed(2)}</div>
             </CardContent>
           </Card>
           <Card className="card-shadow border-l-4 border-l-orange-500">
-            <CardHeader className="flex flex-row items-center justify-between pb-3 px-4 md:px-6">
+            <CardHeader className="flex flex-row items-center justify-between pb-2 px-3 md:px-4">
               <CardTitle className="text-xs md:text-sm font-medium text-muted-foreground">পেন্ডিং ডিপোজিট</CardTitle>
-              <Wallet className="h-5 w-5 md:h-6 md:w-6 text-orange-500" />
+              <Wallet className="h-4 w-4 md:h-5 md:w-5 text-orange-500" />
             </CardHeader>
-            <CardContent className="px-4 md:px-6 pt-0 md:pt-2">
-              <div className="text-xl md:text-2xl lg:text-3xl font-bold text-foreground truncate">{pendingDeposits} টি</div>
+            <CardContent className="px-3 md:px-4 pt-0 md:pt-2">
+              <div className="text-lg md:text-xl lg:text-2xl font-bold text-foreground truncate">{pendingDeposits} টি</div>
             </CardContent>
           </Card>
         </div>
