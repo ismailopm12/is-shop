@@ -1,10 +1,52 @@
-import { ReactNode, useState } from "react";
+import { ReactNode, useState, useEffect } from "react";
 import { Navigate } from "react-router-dom";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { SidebarProvider, SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
 import { AdminSidebar } from "./AdminSidebar";
 import { useAdminCheck } from "@/hooks/useAdminCheck";
 import { Menu, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+
+// Inner component to control sidebar state
+function AdminContent({ children, mobileMenuOpen, setMobileMenuOpen }: { 
+  children: ReactNode; 
+  mobileMenuOpen: boolean;
+  setMobileMenuOpen: (open: boolean) => void;
+}) {
+  const { openMobile, setOpenMobile } = useSidebar();
+
+  // Sync our state with sidebar's internal state
+  useEffect(() => {
+    if (mobileMenuOpen && !openMobile) {
+      setOpenMobile(true);
+    }
+  }, [mobileMenuOpen, openMobile, setOpenMobile]);
+
+  return (
+    <>
+      {/* Mobile Header */}
+      <header className="sticky top-0 z-30 h-14 flex items-center border-b bg-card px-3 md:px-4 gap-3 shadow-sm">
+        {/* Mobile Menu Button - TRIGGERS SIDEBAR */}
+        <SidebarTrigger className="md:hidden" />
+        
+        {/* Desktop Sidebar Trigger */}
+        <SidebarTrigger className="hidden md:flex" />
+        
+        <div className="flex-1 min-w-0">
+          <h1 className="text-base md:text-lg font-semibold text-foreground truncate">
+            Admin Panel
+          </h1>
+        </div>
+      </header>
+
+      {/* Main Content Area */}
+      <main className="flex-1 p-3 md:p-6 bg-background overflow-x-hidden">
+        <div className="w-full max-w-7xl mx-auto">
+          {children}
+        </div>
+      </main>
+    </>
+  );
+}
 
 const AdminLayout = ({ children }: { children: ReactNode }) => {
   const { isAdmin, loading } = useAdminCheck();
@@ -25,85 +67,16 @@ const AdminLayout = ({ children }: { children: ReactNode }) => {
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
-        {/* Desktop Sidebar - Always visible on desktop */}
-        <div className="hidden md:block">
-          <AdminSidebar />
-        </div>
+        {/* Desktop Sidebar */}
+        <AdminSidebar />
 
-        {/* Mobile Sidebar Overlay */}
-        <AnimatePresence>
-          {mobileMenuOpen && (
-            <>
-              {/* Backdrop */}
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="fixed inset-0 bg-black/50 z-40 md:hidden"
-                onClick={() => setMobileMenuOpen(false)}
-              />
-              
-              {/* Mobile Sidebar */}
-              <motion.div
-                initial={{ x: -300 }}
-                animate={{ x: 0 }}
-                exit={{ x: -300 }}
-                transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                className="fixed left-0 top-0 bottom-0 w-[280px] max-w-[85vw] bg-card z-50 md:hidden shadow-2xl"
-              >
-                <div className="h-full flex flex-col">
-                  {/* Mobile Header */}
-                  <div className="h-14 flex items-center justify-between px-4 border-b flex-shrink-0">
-                    <h1 className="text-lg font-bold text-foreground">Admin Panel</h1>
-                    <button
-                      onClick={() => setMobileMenuOpen(false)}
-                      className="p-2 hover:bg-accent rounded-lg transition-colors"
-                      aria-label="Close menu"
-                    >
-                      <X className="h-5 w-5" />
-                    </button>
-                  </div>
-                  
-                  {/* Sidebar Content - Scrollable */}
-                  <div className="flex-1 overflow-y-auto overflow-x-hidden">
-                    <AdminSidebar />
-                  </div>
-                </div>
-              </motion.div>
-            </>
-          )}
-        </AnimatePresence>
-
-        {/* Main Content */}
-        <div className="flex-1 flex flex-col min-h-screen">
-          {/* Mobile & Desktop Header */}
-          <header className="sticky top-0 z-30 h-14 flex items-center border-b bg-card px-3 md:px-4 gap-3 shadow-sm">
-            {/* Mobile Menu Button */}
-            <button
-              onClick={() => setMobileMenuOpen(true)}
-              className="md:hidden p-2 hover:bg-accent rounded-lg transition-colors"
-              aria-label="Open menu"
-            >
-              <Menu className="h-5 w-5" />
-            </button>
-            
-            {/* Desktop Sidebar Trigger */}
-            <SidebarTrigger className="hidden md:flex" />
-            
-            <div className="flex-1 min-w-0">
-              <h1 className="text-base md:text-lg font-semibold text-foreground truncate">
-                Admin Panel
-              </h1>
-            </div>
-          </header>
-
-          {/* Main Content Area */}
-          <main className="flex-1 p-3 md:p-6 bg-background overflow-x-hidden">
-            <div className="w-full max-w-7xl mx-auto">
-              {children}
-            </div>
-          </main>
-        </div>
+        {/* Mobile Sidebar - Built into shadcn/ui sidebar */}
+        <AdminContent 
+          mobileMenuOpen={mobileMenuOpen} 
+          setMobileMenuOpen={setMobileMenuOpen}
+        >
+          {children}
+        </AdminContent>
       </div>
     </SidebarProvider>
   );
