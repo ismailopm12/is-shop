@@ -1,0 +1,201 @@
+/* ==================== ADMIN PANEL MOBILE RESPONSIVE UTILITIES ==================== */
+/* Add these classes to make any admin component mobile responsive */
+
+/* ==================== CONTAINER WRAPPERS ==================== */
+.admin-container {
+  @apply w-full max-w-[1920px] mx-auto px-3 md:px-6;
+}
+
+.admin-page {
+  @apply p-3 md:p-4 lg:p-6;
+}
+
+/* ==================== SPACING ==================== */
+.section-spacing {
+  @apply space-y-4 md:space-y-6 lg:space-y-8;
+}
+
+.responsive-gap {
+  @apply gap-3 md:gap-4 lg:gap-6;
+}
+
+/* ==================== TYPOGRAPHY ==================== */
+.heading-responsive {
+  @apply text-xl md:text-2xl lg:text-3xl font-bold;
+}
+
+.title-responsive {
+  @apply text-lg md:text-xl lg:text-2xl font-semibold;
+}
+
+.text-responsive-sm {
+  @apply text-xs md:text-sm lg:text-base;
+}
+
+.text-responsive-base {
+  @apply text-sm md:text-base lg:text-lg;
+}
+
+/* ==================== BUTTONS ==================== */
+.btn-responsive {
+  @apply h-9 md:h-10 min-h-[44px] px-3 md:px-4;
+}
+
+.btn-responsive-sm {
+  @apply h-8 md:h-9 min-h-[40px] px-2 md:px-3;
+}
+
+.btn-responsive-lg {
+  @apply h-11 md:h-12 min-h-[48px] px-4 md:px-6;
+}
+
+.btn-icon-responsive {
+  @apply h-9 w-9 md:h-10 md:w-10 min-h-[44px] min-w-[44px];
+}
+
+/* ==================== INPUTS ==================== */
+.input-responsive {
+  @apply h-9 md:h-10 min-h-[44px] text-sm md:text-base px-3 md:px-4;
+}
+
+/* ==================== CARDS ==================== */
+.card-responsive {
+  @apply shadow-sm md:shadow-md lg:shadow-lg rounded-lg md:rounded-xl;
+}
+
+.card-padding-responsive {
+  @apply p-3 md:p-4 lg:p-6;
+}
+
+/* ==================== BADGES ==================== */
+.badge-responsive {
+  @apply text-xs md:text-sm px-2 md:px-3 py-0.5 md:py-1;
+}
+
+.badge-responsive-sm {
+  @apply text-[10px] md:text-xs px-1.5 md:px-2 py-0.5;
+}
+
+/* ==================== ICONS ==================== */
+.icon-responsive {
+  @apply h-4 w-4 md:h-5 md:w-5 lg:h-6 lg:w-6;
+}
+
+.icon-responsive-sm {
+  @apply h-3 w-3 md:h-4 md:w-4;
+}
+
+.icon-responsive-lg {
+  @apply h-5 w-5 md:h-6 md:w-6 lg:h-7 lg:w-7;
+}
+
+/* ==================== GRIDS ==================== */
+.grid-stats {
+  @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 lg:gap-6;
+}
+
+.grid-products {
+  @apply grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 md:gap-4;
+}
+
+.grid-form {
+  @apply grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6;
+}
+
+.grid-content {
+  @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6;
+}
+
+/* ==================== TABLES ==================== */
+.table-responsive-wrapper {
+  @apply overflow-x-auto -mx-4 md:mx-0;
+}
+
+.table-responsive-inner {
+  @apply min-w-[600px] md:min-w-full px-4 md:px-0;
+}
+
+/* ==================== HEADER ==================== */
+.header-responsive {
+  @apply flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 md:mb-6;
+}
+
+/* ==================== SIDEBAR ==================== */
+.sidebar-mobile-trigger {
+  @apply h-9 w-9 md:h-10 md:w-10;
+}
+
+.sidebar-menu-item {
+  @apply min-h-[44px] md:min-h-[48px] px-3;
+}
+
+.sidebar-icon {
+  @apply h-4 w-4 md:h-5 md:w-5;
+}
+
+.sidebar-text {
+  @apply text-sm md:text-base truncate;
+}
+
+/* ==================== UTILITY CLASSES ==================== */
+/* Hide on mobile, show on desktop */
+.hide-mobile {
+  @apply hidden md:block;
+}
+
+/* Show on mobile, hide on desktop */
+.show-mobile {
+  @apply block md:hidden;
+}
+
+/* Truncate text with ellipsis */
+.truncate-responsive {
+  @apply truncate;
+}
+
+/* Prevent horizontal scroll */
+.no-horizontal-scroll {
+  @apply overflow-x-hidden;
+}
+
+/* Full width on mobile, constrained on desktop */
+.full-width-mobile {
+  @apply w-full max-w-[1920px] mx-auto;
+}
+
+/* ==================== EXAMPLE USAGE ==================== */
+/*
+// Responsive Card Example
+<Card className="card-responsive card-padding-responsive">
+  <CardHeader>
+    <CardTitle className="title-responsive">Title</CardTitle>
+  </CardHeader>
+  <CardContent>
+    <p className="text-responsive-base">Content</p>
+  </CardContent>
+</Card>
+
+// Responsive Button Example
+<Button className="btn-responsive">Click Me</Button>
+<Button className="btn-icon-responsive">
+  <Icon className="icon-responsive" />
+</Button>
+
+// Responsive Grid Example
+<div className="grid-stats">
+  {cards.map(card => <Card key={card.id}>{card.content}</Card>)}
+</div>
+
+// Responsive Table Example
+<div className="table-responsive-wrapper">
+  <div className="table-responsive-inner">
+    <Table>...</Table>
+  </div>
+</div>
+
+// Responsive Header Example
+<div className="header-responsive">
+  <h2 className="heading-responsive">Page Title</h2>
+  <Button className="btn-responsive">Action</Button>
+</div>
+*/

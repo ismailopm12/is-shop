@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { Plus, Trash2 } from "lucide-react";
 
@@ -45,9 +46,12 @@ const AdminVoucherCodes = () => {
   const [selectedPackageFilter, setSelectedPackageFilter] = useState<string>("all");
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [showAdd, setShowAdd] = useState(false);
+  const [editingVoucher, setEditingVoucher] = useState<VoucherCode | null>(null);
+  const [editCodeValue, setEditCodeValue] = useState("");
   const [addProductId, setAddProductId] = useState("");
   const [addPackageId, setAddPackageId] = useState("");
   const [bulkCodes, setBulkCodes] = useState("");
+  const [loading, setLoading] = useState(true);
 
   const fetchProducts = async () => {
     const { data } = await supabase.from("products").select("id, name, is_voucher").eq("is_voucher", true).order("name");
@@ -118,12 +122,38 @@ const AdminVoucherCodes = () => {
   };
 
   const fetchVouchers = async () => {
-    let query = supabase.from("voucher_codes").select("*").order("created_at", { ascending: false });
-    if (selectedProduct !== "all") query = query.eq("product_id", selectedProduct);
-    if (selectedPackageFilter !== "all") query = query.eq("package_id", selectedPackageFilter);
-    if (filterStatus !== "all") query = query.eq("status", filterStatus);
-    const { data } = await query;
-    if (data) setVouchers(data as VoucherCode[]);
+    try {
+      setLoading(true);
+      console.log("=== Fetching vouchers...");
+      console.log("Filters:", { selectedProduct, selectedPackageFilter, filterStatus });
+      
+      let query = supabase.from("voucher_codes").select("*").order("created_at", { ascending: false });
+      if (selectedProduct !== "all") query = query.eq("product_id", selectedProduct);
+      if (selectedPackageFilter !== "all") query = query.eq("package_id", selectedPackageFilter);
+      if (filterStatus !== "all") query = query.eq("status", filterStatus);
+      
+      const { data, error } = await query;
+      
+      if (error) {
+        console.error("❌ Error fetching vouchers:", error);
+        toast.error(`ভাউচার লোড ব্যর্থ: ${error.message}`);
+        setVouchers([]);
+        return;
+      }
+      
+      console.log("✅ Fetched vouchers:", data?.length || 0);
+      if (data) {
+        setVouchers(data as VoucherCode[]);
+      } else {
+        setVouchers([]);
+      }
+    } catch (err) {
+      console.error("Unexpected error fetching vouchers:", err);
+      toast.error("ভাউচার লোড করতে সমস্যা হয়েছে");
+      setVouchers([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => { fetchProducts(); fetchPackages(); }, []);
@@ -197,6 +227,31 @@ const AdminVoucherCodes = () => {
     const { error } = await supabase.from("voucher_codes").delete().eq("id", id);
     if (error) { toast.error("ডিলিট ব্যর্থ"); return; }
     toast.success("ডিলিট হয়েছে");
+    fetchVouchers();
+  };
+
+  const openEditVoucher = (voucher: VoucherCode) => {
+    setEditingVoucher(voucher);
+    setEditCodeValue(voucher.code);
+  };
+
+  const handleEditVoucher = async () => {
+    if (!editingVoucher) return;
+    if (!editCodeValue.trim()) { toast.error("কোড খালি রাখা যাবে না"); return; }
+
+    const { error } = await supabase
+      .from("voucher_codes")
+      .update({ code: editCodeValue.trim() })
+      .eq("id", editingVoucher.id);
+
+    if (error) {
+      toast.error(`আপডেট ব্যর্থ: ${error.message}`);
+      return;
+    }
+
+    toast.success("ভাউচার কোড আপডেট হয়েছে");
+    setEditingVoucher(null);
+    setEditCodeValue("");
     fetchVouchers();
   };
 
@@ -315,49 +370,102 @@ const AdminVoucherCodes = () => {
 
         <Card>
           <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>প্রোডাক্ট</TableHead>
-                  <TableHead>ভ্যারিয়েন্ট</TableHead>
-                  <TableHead>কোড</TableHead>
-                  <TableHead>স্ট্যাটাস</TableHead>
-                  <TableHead>তারিখ</TableHead>
-                  <TableHead>অ্যাকশন</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {vouchers.map(v => (
-                  <TableRow key={v.id}>
-                    <TableCell>{getProductName(v.product_id)}</TableCell>
-                    <TableCell className="text-xs">{getPackageName(v.package_id)}</TableCell>
-                    <TableCell className="font-mono text-xs">{v.code}</TableCell>
-                    <TableCell>
-                      <Badge className={v.status === "available" ? "bg-green-100 text-green-800" : "bg-blue-100 text-blue-800"}>
-                        {v.status === "available" ? "স্টকে" : "বিক্রিত"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{new Date(v.created_at).toLocaleDateString("bn-BD")}</TableCell>
-                    <TableCell>
-                      {v.status === "available" && (
-                        <Button size="sm" variant="ghost" className="text-destructive" onClick={() => handleDelete(v.id)}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {vouchers.length === 0 && (
+            {loading ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full mx-auto mb-2"></div>
+                <p>ভাউচার লোড হচ্ছে...</p>
+              </div>
+            ) : vouchers.length === 0 ? (
+              <div className="text-center py-8">
+                <div className="text-4xl mb-3">🎫</div>
+                <h3 className="text-lg font-semibold text-foreground mb-2">কোনো ভাউচার কোড নেই</h3>
+                <p className="text-sm text-muted-foreground mb-4">নতুন ভাউচার কোড যোগ করতে উপরের বাটনে ক্লিক করুন</p>
+                <Button onClick={() => setShowAdd(true)}>
+                  <Plus className="h-4 w-4 mr-2" />নতুন কোড যোগ করুন
+                </Button>
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
-                      কোনো ভাউচার কোড নেই
-                    </TableCell>
+                    <TableHead>প্রোডাক্ট</TableHead>
+                    <TableHead>ভ্যারিয়েন্ট</TableHead>
+                    <TableHead>কোড</TableHead>
+                    <TableHead>স্ট্যাটাস</TableHead>
+                    <TableHead>তারিখ</TableHead>
+                    <TableHead>অ্যাকশন</TableHead>
                   </TableRow>
-                )}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {vouchers.map(v => (
+                    <TableRow key={v.id}>
+                      <TableCell>{getProductName(v.product_id)}</TableCell>
+                      <TableCell className="text-xs">{getPackageName(v.package_id)}</TableCell>
+                      <TableCell className="font-mono text-xs">{v.code}</TableCell>
+                      <TableCell>
+                        <Badge className={v.status === "available" ? "bg-green-100 text-green-800" : "bg-blue-100 text-blue-800"}>
+                          {v.status === "available" ? "স্টকে" : "বিক্রিত"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{new Date(v.created_at).toLocaleDateString("bn-BD")}</TableCell>
+                      <TableCell className="flex gap-1">
+                        {v.status === "available" && (
+                          <>
+                            <Button size="sm" variant="ghost" onClick={() => openEditVoucher(v)}>
+                              <Plus className="h-4 w-4 rotate-45" />
+                            </Button>
+                            <Button size="sm" variant="ghost" className="text-destructive" onClick={() => handleDelete(v.id)}>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
           </CardContent>
         </Card>
+
+        {/* Edit Voucher Code Dialog */}
+        <Dialog open={!!editingVoucher} onOpenChange={(open) => {
+          if (!open) {
+            setEditingVoucher(null);
+            setEditCodeValue("");
+          }
+        }}>
+          <DialogContent className="max-h-[90vh] overflow-y-auto">
+            <DialogHeader><DialogTitle>ভাউচার কোড এডিট করুন</DialogTitle></DialogHeader>
+            <div className="space-y-4 py-2">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground">প্রোডাক্ট</label>
+                <Input 
+                  value={getProductName(editingVoucher?.product_id || "")} 
+                  disabled 
+                  className="bg-muted"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground">ভ্যারিয়েন্ট</label>
+                <Input 
+                  value={getPackageName(editingVoucher?.package_id)} 
+                  disabled 
+                  className="bg-muted"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground">কোড এডিট করুন</label>
+                <Input 
+                  value={editCodeValue} 
+                  onChange={(e) => setEditCodeValue(e.target.value)}
+                  placeholder="ভাউচার কোড"
+                />
+              </div>
+              <Button onClick={handleEditVoucher} className="w-full">আপডেট করুন</Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </AdminLayout>
   );

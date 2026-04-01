@@ -18,16 +18,37 @@ interface DigitalProduct {
 const DigitalProducts = () => {
   const [products, setProducts] = useState<DigitalProduct[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetch = async () => {
-      const { data } = await supabase
-        .from("digital_products")
-        .select("id, name, category, price, image_url, file_type")
-        .eq("is_active", true)
-        .order("created_at");
-      if (data) setProducts(data);
-      setLoading(false);
+      try {
+        console.log("Fetching digital products...");
+        const { data, error } = await supabase
+          .from("digital_products")
+          .select("id, name, category, price, image_url, file_type")
+          .eq("is_active", true)
+          .order("created_at");
+        
+        if (error) {
+          console.error("Error fetching digital products:", error);
+          setError(error.message);
+          return;
+        }
+        
+        if (data) {
+          console.log("Digital products fetched:", data.length);
+          setProducts(data);
+        } else {
+          console.warn("No digital products found");
+          setProducts([]);
+        }
+      } catch (err) {
+        console.error("Unexpected error fetching digital products:", err);
+        setError("Failed to load digital products");
+      } finally {
+        setLoading(false);
+      }
     };
     fetch();
   }, []);
@@ -47,6 +68,12 @@ const DigitalProducts = () => {
         {loading ? (
           <div className="flex justify-center py-12">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+          </div>
+        ) : error ? (
+          <div className="text-center py-12">
+            <div className="text-6xl mb-4">⚠️</div>
+            <h3 className="text-lg font-semibold text-foreground mb-2">Error Loading Products</h3>
+            <p className="text-muted-foreground text-sm">{error}</p>
           </div>
         ) : products.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">কোনো ডিজিটাল প্রোডাক্ট নেই</div>

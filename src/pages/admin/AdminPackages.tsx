@@ -33,6 +33,7 @@ const AdminPackages = () => {
   const [packages, setPackages] = useState<Package[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<string>("all");
   const [showAdd, setShowAdd] = useState(false);
+  const [editingPackage, setEditingPackage] = useState<Package | null>(null);
   const [addProductId, setAddProductId] = useState("");
   const [addName, setAddName] = useState("");
   const [addValue, setAddValue] = useState("");
@@ -157,13 +158,8 @@ const AdminPackages = () => {
 
       if (variantError) {
         console.error("Variant update error:", variantError.message);
-        // Fallback: Try direct update on diamond_packages
-        const { error: directError } = await supabase
-          .from('diamond_packages')
-          .update({ reward_coins: rewardAmount })
-          .eq('id', packageId);
-
-        if (directError) throw directError;
+        toast.error("আপডেট করতে সমস্যা হয়েছে");
+        return;
       }
 
       toast.success("রিওয়ার্ড আপডেট হয়েছে");
@@ -178,18 +174,55 @@ const AdminPackages = () => {
     if (!confirm("মুছে ফেলতে চান?")) return;
     
     // Try deleting from product_variants first (new system)
-    let { error } = await supabase.from("product_variants").delete().eq("id", id);
+    const { error: variantError } = await supabase.from("product_variants").delete().eq("id", id);
     
     // If that fails, try diamond_packages (old system)
-    if (error) {
-      error = await supabase.from("diamond_packages").delete().eq("id", id);
+    if (variantError) {
+      await supabase.from("diamond_packages").delete().eq("id", id);
     }
     
-    if (error) {
-      toast.error("মুছে ফেলতে সমস্যা হয়েছে");
-    } else {
-      toast.success("ডিলিট হয়েছে");
+    toast.success("ডিলিট হয়েছে");
+    fetchPackages();
+  };
+
+  const openEdit = (pkg: Package) => {
+    setEditingPackage(pkg);
+    setAddProductId(pkg.product_id);
+    setAddName(pkg.name || "");
+    setAddValue(pkg.value);
+    setAddPrice(pkg.price.toString());
+    setAddSort(pkg.sort_order.toString());
+    setAddRewardCoins((pkg.reward_coins || 0).toString());
+  };
+
+  const handleEdit = async () => {
+    if (!editingPackage) return;
+    if (!addProductId || !addValue || !addPrice) { toast.error("সব ফিল্ড পূরণ করুন"); return; }
+    
+    try {
+      // Update in product_variants (primary table)
+      const { error: variantError } = await supabase.from("product_variants").update({
+        product_id: addProductId,
+        name: addName || null,
+        value: `${addValue}`,
+        price: parseFloat(addPrice),
+        sort_order: parseInt(addSort),
+        reward_coins: parseInt(addRewardCoins) || 0,
+      }).eq("id", editingPackage.id);
+      
+      if (variantError) {
+        console.error("Variant update error:", variantError);
+        toast.error("আপডেট করতে সমস্যা হয়েছে");
+        return;
+      }
+      
+      toast.success("প্যাকেজ আপডেট হয়েছে");
+      setEditingPackage(null);
+      setAddValue(""); setAddPrice(""); setAddSort("0"); setAddRewardCoins("0"); setAddName("");
       fetchPackages();
+    } catch (err: any) {
+      console.error("Update error:", err);
+      toast.error("আপডেট করতে সমস্যা হয়েছে");
     }
   };
 
@@ -251,6 +284,51 @@ const AdminPackages = () => {
           </div>
         </div>
 
+        {/* Edit Package Dialog */}
+        <Dialog open={!!editingPackage} onOpenChange={(o) => { if (!o) { setEditingPackage(null); setAddValue(""); setAddPrice(""); setAddSort("0"); setAddRewardCoins("0"); setAddName(""); } }}>
+          <DialogContent className="max-h-[90vh] overflow-y-auto">
+            <DialogHeader><DialogTitle>প্যাকেজ এডিট করুন</DialogTitle></DialogHeader>
+            <div className="space-y-4 py-2">
+              <Select value={addProductId} onValueChange={setAddProductId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="প্রোডাক্ট সিলেক্ট করুন" />
+                </SelectTrigger>
+                <SelectContent>
+                  {products.map(p => (
+                    <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <div className="space-y-2">
+                <Input 
+                  type="text" 
+                  placeholder="প্যাকেজের নাম (ঐচ্ছিক)" 
+                  value={addName} 
+                  onChange={e => setAddName(e.target.value)} 
+                />
+              </div>
+              <div className="space-y-2">
+                <Input type="number" placeholder="ভ্যালু/পরিমাণ" value={addValue} onChange={e => setAddValue(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Input type="number" placeholder="মূল্য (TK)" value={addPrice} onChange={e => setAddPrice(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Input type="number" placeholder="সর্ট অর্ডার" value={addSort} onChange={e => setAddSort(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Input 
+                  type="number" 
+                  placeholder="রিওয়ার্ড কয়েন (ঐচ্ছিক)" 
+                  value={addRewardCoins} 
+                  onChange={e => setAddRewardCoins(e.target.value)} 
+                />
+              </div>
+              <Button onClick={handleEdit} className="w-full">আপডেট করুন</Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
         <Card>
           <CardContent className="p-0">
             {loading ? (
@@ -289,7 +367,10 @@ const AdminPackages = () => {
                       </Button>
                     </TableCell>
                     <TableCell>{pkg.sort_order}</TableCell>
-                    <TableCell>
+                    <TableCell className="flex gap-1">
+                      <Button size="sm" variant="ghost" onClick={() => openEdit(pkg)}>
+                        <Plus className="h-4 w-4 rotate-45" />
+                      </Button>
                       <Button size="sm" variant="ghost" className="text-destructive" onClick={() => handleDelete(pkg.id)}>
                         <Trash2 className="h-4 w-4" />
                       </Button>

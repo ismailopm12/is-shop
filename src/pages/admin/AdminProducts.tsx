@@ -171,17 +171,21 @@ const AdminProducts = () => {
             <DialogTrigger asChild>
               <Button><Plus className="h-4 w-4 mr-2" />নতুন প্রোডাক্ট</Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="max-h-[90vh] overflow-y-auto">
               <DialogHeader><DialogTitle>নতুন প্রোডাক্ট যোগ করুন</DialogTitle></DialogHeader>
-              <div className="space-y-3">
-                <Input placeholder="প্রোডাক্টের নাম" value={name} onChange={(e) => setName(e.target.value)} />
-                <Input placeholder="স্লাগ (URL)" value={slug} onChange={(e) => setSlug(e.target.value)} />
-                <div>
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <Input placeholder="প্রোডাক্টের নাম" value={name} onChange={(e) => setName(e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <Input placeholder="স্লাগ (URL)" value={slug} onChange={(e) => setSlug(e.target.value)} />
+                </div>
+                <div className="space-y-2">
                   <label className="text-sm font-medium text-foreground block mb-1">প্রোডাক্ট ইমেজ</label>
                   <ImageUpload folder="products" currentUrl={imageUrl} onUpload={setImageUrl} />
                   <Input placeholder="অথবা ইমেজ URL দিন" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} className="mt-2" />
                 </div>
-                <div>
+                <div className="space-y-2">
                   <label className="text-sm font-medium text-foreground block mb-1">ক্যাটাগরি সিলেক্ট করুন</label>
                   <Select value={categoryId} onValueChange={(val) => {
                     setCategoryId(val);
@@ -198,8 +202,10 @@ const AdminProducts = () => {
                     </SelectContent>
                   </Select>
                 </div>
-                <Textarea placeholder="প্রোডাক্ট ডেসক্রিপশন" value={description} onChange={(e) => setDescription(e.target.value)} rows={4} />
-                <div className="flex items-center justify-between">
+                <div className="space-y-2">
+                  <Textarea placeholder="প্রোডাক্ট ডেসক্রিপশন" value={description} onChange={(e) => setDescription(e.target.value)} rows={4} />
+                </div>
+                <div className="flex items-center justify-between space-y-2">
                   <label className="text-sm font-medium text-foreground">ভাউচার প্রোডাক্ট</label>
                   <Switch checked={isVoucher} onCheckedChange={setIsVoucher} />
                 </div>
@@ -216,7 +222,7 @@ const AdminProducts = () => {
                       + Add Field
                     </Button>
                   </div>
-                  
+                            
                   {/* Predefined fields quick add */}
                   <div className="text-xs text-muted-foreground mb-2">Quick add:</div>
                   <div className="flex flex-wrap gap-2">
@@ -245,10 +251,10 @@ const AdminProducts = () => {
                       </Button>
                     ))}
                   </div>
-                  
-                  {/* Added fields display */}
+                            
+                  {/* Added fields display with scroll for many fields */}
                   {userInfoFields.length > 0 && (
-                    <div className="space-y-2 mt-3">
+                    <div className="space-y-2 mt-3 max-h-64 overflow-y-auto">
                       {userInfoFields.map((field, index) => (
                         <div key={field.id || index} className="flex items-center justify-between p-2 border rounded bg-card">
                           <div className="flex-1">
@@ -273,7 +279,7 @@ const AdminProducts = () => {
                     </div>
                   )}
                 </div>
-                <Button onClick={handleAdd} className="w-full">যোগ করুন</Button>
+                <Button onClick={handleAdd} className="w-full mt-4">যোগ করুন</Button>
               </div>
             </DialogContent>
           </Dialog>
@@ -281,10 +287,10 @@ const AdminProducts = () => {
 
         {/* Add Custom Field Dialog */}
         <Dialog open={showAddField} onOpenChange={(o) => { setShowAddField(o); if (!o) { setNewFieldName(""); setNewFieldLabel(""); setNewFieldType("text"); setNewFieldPlaceholder(""); setNewFieldRequired(true); } }}>
-          <DialogContent>
+          <DialogContent className="max-h-[90vh] overflow-y-auto">
             <DialogHeader><DialogTitle>Add Custom User Info Field</DialogTitle></DialogHeader>
-            <div className="space-y-3">
-              <div>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
                 <label className="text-sm font-medium text-foreground block mb-1">Field ID (lowercase, no spaces)</label>
                 <Input 
                   placeholder="e.g., game_uid, whatsapp" 
@@ -292,7 +298,7 @@ const AdminProducts = () => {
                   onChange={(e) => setNewFieldName(e.target.value.toLowerCase().replace(/\s+/g, '_'))} 
                 />
               </div>
-              <div>
+              <div className="space-y-2">
                 <label className="text-sm font-medium text-foreground block mb-1">Field Label (display name)</label>
                 <Input 
                   placeholder="e.g., Game UID, WhatsApp Number" 
@@ -300,7 +306,7 @@ const AdminProducts = () => {
                   onChange={(e) => setNewFieldLabel(e.target.value)} 
                 />
               </div>
-              <div>
+              <div className="space-y-2">
                 <label className="text-sm font-medium text-foreground block mb-1">Field Type</label>
                 <Select value={newFieldType} onValueChange={(val: any) => setNewFieldType(val)}>
                   <SelectTrigger>
@@ -314,7 +320,7 @@ const AdminProducts = () => {
                   </SelectContent>
                 </Select>
               </div>
-              <div>
+              <div className="space-y-2">
                 <label className="text-sm font-medium text-foreground block mb-1">Placeholder Text</label>
                 <Input 
                   placeholder="e.g., Enter your UID" 
@@ -352,7 +358,7 @@ const AdminProducts = () => {
                     toast.error("Field ID and Label are required");
                   }
                 }} 
-                className="w-full"
+                className="w-full mt-2"
               >
                 Add Field
               </Button>
@@ -361,17 +367,21 @@ const AdminProducts = () => {
         </Dialog>
 
         <Dialog open={!!editProduct} onOpenChange={(o) => { if (!o) { setEditProduct(null); resetForm(); } }}>
-          <DialogContent>
+          <DialogContent className="max-h-[90vh] overflow-y-auto">
             <DialogHeader><DialogTitle>প্রোডাক্ট এডিট করুন</DialogTitle></DialogHeader>
-            <div className="space-y-3">
-              <Input placeholder="প্রোডাক্টের নাম" value={name} onChange={(e) => setName(e.target.value)} />
-              <Input placeholder="স্লাগ (URL)" value={slug} onChange={(e) => setSlug(e.target.value)} />
-              <div>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Input placeholder="প্রোডাক্টের নাম" value={name} onChange={(e) => setName(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Input placeholder="স্লাগ (URL)" value={slug} onChange={(e) => setSlug(e.target.value)} />
+              </div>
+              <div className="space-y-2">
                 <label className="text-sm font-medium text-foreground block mb-1">প্রোডাক্ট ইমেজ</label>
                 <ImageUpload folder="products" currentUrl={imageUrl} onUpload={setImageUrl} />
                 <Input placeholder="অথবা ইমেজ URL দিন" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} className="mt-2" />
               </div>
-              <div>
+              <div className="space-y-2">
                 <label className="text-sm font-medium text-foreground block mb-1">ক্যাটাগরি সিলেক্ট করুন</label>
                 <Select value={categoryId} onValueChange={(val) => {
                   setCategoryId(val);
@@ -388,8 +398,10 @@ const AdminProducts = () => {
                   </SelectContent>
                 </Select>
               </div>
-              <Textarea placeholder="প্রোডাক্ট ডেসক্রিপশন" value={description} onChange={(e) => setDescription(e.target.value)} rows={4} />
-              <div className="flex items-center justify-between">
+              <div className="space-y-2">
+                <Textarea placeholder="প্রোডাক্ট ডেসক্রিপশন" value={description} onChange={(e) => setDescription(e.target.value)} rows={4} />
+              </div>
+              <div className="flex items-center justify-between space-y-2">
                 <label className="text-sm font-medium text-foreground">ভাউচার প্রোডাক্ট</label>
                 <Switch checked={isVoucher} onCheckedChange={setIsVoucher} />
               </div>
@@ -438,9 +450,9 @@ const AdminProducts = () => {
                   ))}
                 </div>
                 
-                {/* Added fields display */}
+                {/* Added fields display with scroll for many fields */}
                 {userInfoFields.length > 0 && (
-                  <div className="space-y-2 mt-3">
+                  <div className="space-y-2 mt-3 max-h-64 overflow-y-auto">
                     {userInfoFields.map((field, index) => (
                       <div key={field.id || index} className="flex items-center justify-between p-2 border rounded bg-card">
                         <div className="flex-1">
@@ -465,7 +477,7 @@ const AdminProducts = () => {
                   </div>
                 )}
               </div>
-              <Button onClick={handleEdit} className="w-full">আপডেট করুন</Button>
+              <Button onClick={handleEdit} className="w-full mt-4">আপডেট করুন</Button>
             </div>
           </DialogContent>
         </Dialog>

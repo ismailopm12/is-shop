@@ -118,9 +118,9 @@ const AdminDigitalProducts = () => {
             <DialogTrigger asChild>
               <Button><Plus className="h-4 w-4 mr-2" />নতুন ফাইল প্রোডাক্ট</Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="max-h-[90vh] overflow-y-auto">
               <DialogHeader><DialogTitle>নতুন ডিজিটাল প্রোডাক্ট</DialogTitle></DialogHeader>
-              <div className="space-y-3 max-h-[70vh] overflow-y-auto">
+              <div className="space-y-4 py-2">
                 <Input placeholder="প্রোডাক্টের নাম" value={name} onChange={e => setName(e.target.value)} />
                 <Input placeholder="ক্যাটাগরি (THEMES, PLUGINS, FILES)" value={category} onChange={e => setCategory(e.target.value)} />
                 <Input placeholder="মূল্য (৳)" type="number" value={price} onChange={e => setPrice(e.target.value)} />
@@ -149,9 +149,9 @@ const AdminDigitalProducts = () => {
         </div>
 
         <Dialog open={!!editProduct} onOpenChange={o => { if (!o) { setEditProduct(null); resetForm(); } }}>
-          <DialogContent>
+          <DialogContent className="max-h-[90vh] overflow-y-auto">
             <DialogHeader><DialogTitle>এডিট করুন</DialogTitle></DialogHeader>
-            <div className="space-y-3 max-h-[70vh] overflow-y-auto">
+            <div className="space-y-4 py-2">
               <Input placeholder="প্রোডাক্টের নাম" value={name} onChange={e => setName(e.target.value)} />
               <Input placeholder="ক্যাটাগরি (THEMES, PLUGINS, FILES)" value={category} onChange={e => setCategory(e.target.value)} />
               <Input placeholder="মূল্য (৳)" type="number" value={price} onChange={e => setPrice(e.target.value)} />

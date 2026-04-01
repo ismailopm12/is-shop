@@ -16,7 +16,38 @@ const AddMoney = () => {
   const { user, profile, loading } = useAuth();
   const { settings } = useSiteSettings();
   const [processing, setProcessing] = useState(false);
-  const videoUrl = settings.video_tutorial_url || "https://www.youtube.com/embed/dQw4w9WgXcQ";
+  
+  // Safely get video URL with proper fallback
+  const getVideoUrl = () => {
+    if (!settings.video_tutorial_url) {
+      return "https://www.youtube.com/embed/dQw4w9WgXcQ"; // Default fallback
+    }
+    
+    const url = settings.video_tutorial_url.trim();
+    
+    // If it's a YouTube URL, ensure it's in embed format
+    if (url.includes('youtube.com') || url.includes('youtu.be')) {
+      // Convert regular YouTube URLs to embed format
+      if (url.includes('watch?v=')) {
+        return url.replace('watch?v=', 'embed/');
+      }
+      if (url.includes('youtu.be/') && !url.includes('embed/')) {
+        const videoId = url.split('youtu.be/')[1];
+        return `https://www.youtube.com/embed/${videoId}`;
+      }
+      return url;
+    }
+    
+    // If it looks like a storage URL, show error instead
+    if (url.includes('supabase.co/storage')) {
+      console.error("Invalid storage URL detected:", url);
+      return "https://www.youtube.com/embed/dQw4w9WgXcQ"; // Fallback
+    }
+    
+    return url;
+  };
+  
+  const videoUrl = getVideoUrl();
 
   const handleSubmit = async () => {
     if (!amount || Number(amount) <= 0) {
@@ -112,8 +143,8 @@ const AddMoney = () => {
         </section>
 
         <section className="bg-card rounded-xl p-5 card-shadow">
-          <h2 className="font-bold text-lg mb-4">Tutorial</h2>
-          <div className="rounded-xl overflow-hidden aspect-video bg-muted">
+          <h2 className="font-bold text-lg mb-4">টিউটোরিয়াল</h2>
+          <div className="rounded-xl overflow-hidden aspect-video bg-muted relative">
             {videoUrl ? (
               <iframe
                 className="w-full h-full"
@@ -121,11 +152,24 @@ const AddMoney = () => {
                 title="Tutorial Video"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen
+                onError={(e) => {
+                  console.error("Video iframe failed to load:", e);
+                  // @ts-ignore - Fallback handling
+                  e.target.src = "https://www.youtube.com/embed/dQw4w9WgXcQ";
+                }}
               />
             ) : (
-              <div className="w-full h-full flex items-center justify-center text-muted-foreground">ভিডিও সেট করা হয়নি</div>
+              <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                <div className="text-center p-4">
+                  <div className="text-4xl mb-2">📹</div>
+                  <p className="text-sm">ভিডিও সেট করা হয়নি</p>
+                </div>
+              </div>
             )}
           </div>
+          <p className="text-xs text-muted-foreground mt-2 text-center">
+            ভিডিও লোড না হলে পেজ রিফ্রেশ করুন
+          </p>
         </section>
       </main>
       <Footer />

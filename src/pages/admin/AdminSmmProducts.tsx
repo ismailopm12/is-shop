@@ -126,9 +126,9 @@ const AdminSmmProducts = () => {
             <DialogTrigger asChild>
               <Button onClick={openCreate}><Plus className="h-4 w-4 mr-2" />নতুন যোগ</Button>
             </DialogTrigger>
-            <DialogContent className="max-w-md">
+            <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
               <DialogHeader><DialogTitle>{editing ? "এডিট" : "নতুন"} SMM প্রোডাক্ট</DialogTitle></DialogHeader>
-              <div className="space-y-3">
+              <div className="space-y-4 py-2">
                 <Input placeholder="নাম" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
                 <Input placeholder="ক্যাটাগরি" value={form.category} onChange={e => setForm({ ...form, category: e.target.value })} />
                 <Textarea placeholder="বিবরণ" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} />
@@ -228,14 +228,14 @@ const AdminSmmProducts = () => {
 
       {/* Variants Management Dialog */}
       <Dialog open={variantsOpen} onOpenChange={(o) => { setVariantsOpen(o); if (!o) setSelectedProduct(null); }}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               ভ্যারিয়েন্ট ম্যানেজমেন্ট - {selectedProduct?.name}
             </DialogTitle>
           </DialogHeader>
           
-          <div className="space-y-4">
+          <div className="space-y-4 py-2">
             {/* Add Variant Form */}
             <div className="p-4 border rounded-lg bg-card">
               <h3 className="text-sm font-bold mb-3">নতুন ভ্যারিয়েন্ট যোগ করুন</h3>

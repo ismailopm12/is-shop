@@ -120,32 +120,44 @@ const AdminSeo = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-              Professional SEO Management
-            </h1>
-            <p className="text-muted-foreground mt-1 flex items-center gap-2">
-              <Settings className="h-4 w-4" />
-              Optimize your website for search engines and social media
-            </p>
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => window.open('https://search.google.com/search-console', '_blank')}>
-              <BarChart3 className="mr-2 h-4 w-4" />
-              Google Console
-            </Button>
-            <Button onClick={handleSave} disabled={loading} className="bg-gradient-to-r from-primary to-secondary">
-              <Save className="mr-2 h-4 w-4" />
-              {loading ? "Saving..." : "Save All Settings"}
-            </Button>
-          </div>
+    <div className="space-y-4 md:space-y-6">
+      {/* Header - Mobile Responsive */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
+        <div className="space-y-1 sm:space-y-2">
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+            Professional SEO Management
+          </h1>
+          <p className="text-xs sm:text-sm text-muted-foreground flex items-center gap-2">
+            <Settings className="h-3 w-3 sm:h-4 sm:w-4" />
+            Optimize your website for search engines and social media
+          </p>
         </div>
+        <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+          <Button 
+            variant="outline" 
+            onClick={() => window.open('https://search.google.com/search-console', '_blank')}
+            size="sm"
+            className="flex-1 sm:flex-none"
+          >
+            <BarChart3 className="h-3 w-3 sm:mr-2" />
+            <span className="hidden sm:inline">Google Console</span>
+            <span className="sm:hidden">Console</span>
+          </Button>
+          <Button 
+            onClick={handleSave} 
+            disabled={loading} 
+            className="bg-gradient-to-r from-primary to-secondary flex-1 sm:flex-none"
+            size="sm"
+          >
+            <Save className="h-3 w-3 sm:mr-2" />
+            <span className="hidden sm:inline">{loading ? "Saving..." : "Save All Settings"}</span>
+            <span className="sm:hidden">{loading ? "Saving..." : "Save"}</span>
+          </Button>
+        </div>
+      </div>
         
-        {/* SEO Health Score */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      {/* SEO Health Score */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
@@ -206,7 +218,6 @@ const AdminSeo = () => {
             </CardContent>
           </Card>
         </div>
-      </div>
 
       <Tabs defaultValue="basic" className="space-y-4">
         <TabsList className="grid w-full grid-cols-6 bg-gradient-to-r from-primary/10 to-secondary/10 p-1 rounded-lg">

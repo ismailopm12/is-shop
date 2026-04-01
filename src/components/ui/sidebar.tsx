@@ -18,6 +18,7 @@ const SIDEBAR_WIDTH = "16rem";
 const SIDEBAR_WIDTH_MOBILE = "18rem";
 const SIDEBAR_WIDTH_ICON = "3rem";
 const SIDEBAR_KEYBOARD_SHORTCUT = "b";
+const MOBILE_BREAKPOINT = 768; // Mobile breakpoint in pixels
 
 type SidebarContext = {
   state: "expanded" | "collapsed";
@@ -156,15 +157,32 @@ const Sidebar = React.forwardRef<
         <SheetContent
           data-sidebar="sidebar"
           data-mobile="true"
-          className="w-[--sidebar-width] bg-sidebar p-0 text-sidebar-foreground [&>button]:hidden"
+          className="w-[280px] max-w-[85vw] bg-background p-0 text-sidebar-foreground [&>button]:hidden border-r shadow-2xl z-[70] block pointer-events-auto"
           style={
             {
-              "--sidebar-width": SIDEBAR_WIDTH_MOBILE,
+              "--sidebar-width": "280px",
             } as React.CSSProperties
           }
           side={side}
         >
-          <div className="flex h-full w-full flex-col">{children}</div>
+          {/* Mobile sidebar header with close button */}
+          <div className="flex items-center justify-between px-4 py-3 border-b bg-card">
+            <span className="text-base font-bold text-foreground">Admin Menu</span>
+            <button
+              onClick={() => setOpenMobile(false)}
+              className="h-10 w-10 flex items-center justify-center rounded-lg hover:bg-accent transition-colors focus:outline-none focus:ring-2 focus:ring-ring"
+              aria-label="Close menu"
+              type="button"
+            >
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+          </div>
+          <div className="flex h-[calc(100vh-73px)] w-full flex-col overflow-y-auto bg-background">
+            {children}
+          </div>
         </SheetContent>
       </Sheet>
     );

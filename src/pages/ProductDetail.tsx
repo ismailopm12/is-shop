@@ -39,7 +39,6 @@ interface Product {
   category_id?: string;
   description: string | null;
   is_voucher: boolean;
-  user_info_fields?: UserInfoField[];
 }
 
 interface ProductVariant {
@@ -79,7 +78,7 @@ const ProductDetail = () => {
       setLoading(true);
       
       try {
-        // Generate session ID for view tracking
+        // Generate unique session ID for view tracking
         const sessionId = sessionStorage.getItem('view_session_id') || 
                          crypto.randomUUID();
         sessionStorage.setItem('view_session_id', sessionId);
@@ -87,34 +86,35 @@ const ProductDetail = () => {
         console.log("=== PRODUCT DETAIL DEBUG ===");
         console.log("Looking for slug:", slug);
         
-        // Fetch product with timeout
-        const productPromise = supabase
+        // Fetch product (without view_count as it doesn't exist in schema)
+        const { data: prod, error: productError } = await supabase
           .from("products")
-          .select("id, name, slug, image, image_url, category, description, is_voucher, user_info_fields, view_count")
+          .select("id, name, slug, image, image_url, category, description, is_voucher")
           .eq("slug", slug)
           .eq("is_active", true)
           .single();
-        
-        const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Request timeout')), 15000)
-        );
-        
-        const { data: prod, error: productError } = await Promise.race([
-          productPromise,
-          timeoutPromise
-        ]) as any;
 
         console.log("Product response:", { prod, productError });
 
-        if (productError || !prod) {
+        if (productError) {
           console.error("Product fetch error:", productError);
-          console.error("No product found for slug:", slug);
-          toast.error(`প্রোডাক্ট পাওয়া যায়নি: ${slug}`);
+          toast.error(`প্রোডাক্ট লোড করতে সমস্যা: ${productError.message}`);
           
-          // Redirect to home after 2 seconds
           setTimeout(() => {
             window.location.href = '/';
-          }, 2000);
+          }, 3000);
+          
+          setLoading(false);
+          return;
+        }
+        
+        if (!prod) {
+          console.error("No product found for slug:", slug);
+          toast.error("প্রোডাক্ট পাওয়া যায়নি");
+          
+          setTimeout(() => {
+            window.location.href = '/';
+          }, 3000);
           
           setLoading(false);
           return;
@@ -122,22 +122,9 @@ const ProductDetail = () => {
 
         setProduct(prod as Product);
         
-        // Track view with database function (non-blocking)
-        try {
-          await supabase.rpc('increment_product_view', {
-            p_product_id: prod.id,
-            p_session_id: sessionId,
-            p_duration_seconds: 0
-          });
-          
-          // Update view count after tracking
-          setViewCount((prod.view_count || 0) + 1);
-        } catch (error) {
-          console.error("Error tracking view:", error);
-          // Fallback to simulated count if RPC fails
-          const randomViewers = Math.floor(Math.random() * 20) + 5;
-          setViewCount(randomViewers);
-        }
+        // Set initial view count (random for demo)
+        const randomViewers = Math.floor(Math.random() * 20) + 5;
+        setViewCount(randomViewers);
 
         // Fetch coin settings with timeout
         try {
@@ -153,72 +140,81 @@ const ProductDetail = () => {
           console.error("Error fetching coin settings:", error);
           // Continue without coin settings
         }
-
-        // Try to fetch product_variants first (new system)
+        
+        // Fetch variants with proper error handling
+        console.log("=== FETCHING VARIANTS FOR PRODUCT ===");
+        console.log("Product ID:", prod.id);
+        
         const { data: vars, error: variantsError } = await supabase
           .from("product_variants")
           .select("id, name, value, price, reward_coins")
           .eq("product_id", prod.id)
           .eq("is_active", true)
-          .order("sort_order");
+          .order("created_at", { ascending: true });
         
-        console.log("=== VARIANT FETCH DEBUG ===");
-        console.log("Fetched product_variants:", vars);
-        console.log("Error:", variantsError);
-        console.log("Product ID:", prod.id);
-        console.log("Number of variants found:", vars?.length || 0);
-        if (vars && vars.length > 0) {
-          console.log("First variant:", vars[0]);
-          console.log("Has reward_coins field?", 'reward_coins' in vars[0]);
-          console.log("Reward coins value:", vars[0]?.reward_coins);
-        }
-        console.log("=========================");
+        console.log("Variants response:", { vars, variantsError });
         
         if (variantsError) {
           console.error("Error fetching variants:", variantsError.message);
-          toast.error(`ভ্যারিয়েন্ট লোড করতে সমস্যা: ${variantsError.message}`);
+          // Don't show error toast - variants might not exist yet
         }
         
         if (vars && vars.length > 0) {
+          console.log("Found", vars.length, "variants from product_variants");
           // Use new variants system - mark as NOT from diamond_packages
           const variantsWithFlag = vars.map((v: any) => ({
             ...v,
-            isFromDiamondPackages: false, // Explicitly mark as product_variants
-            reward_coins: v.reward_coins || 0, // Ensure reward_coins is set
+            isFromDiamondPackages: false,
+            reward_coins: v.reward_coins || 0,
           }));
           setVariants(variantsWithFlag as any);
         } else {
+          console.log("No variants found in product_variants, trying diamond_packages...");
           // Fallback to diamond_packages (old system) with reward_coins
-          const { data: pkgs } = await supabase
+          const { data: pkgs, error: pkgError } = await supabase
             .from("diamond_packages")
             .select("id, diamonds, price, name, reward_coins")
             .eq("product_id", prod.id)
             .eq("is_active", true)
             .order("sort_order");
           
-          if (pkgs) {
-            // Convert diamond_packages to variant format - Include admin-set name
+          if (pkgError) {
+            console.error("Error fetching diamond packages:", pkgError.message);
+          }
+          
+          if (pkgs && pkgs.length > 0) {
+            console.log("Found", pkgs.length, "packages from diamond_packages");
+            // Convert diamond_packages to variant format
             const convertedVariants = pkgs.map((pkg: any) => ({
               id: pkg.id,
-              name: pkg.name || "", // Use admin-set name or empty
-              value: `${pkg.diamonds}`, // Just the number
+              name: pkg.name || "",
+              value: `${pkg.diamonds}`,
               price: pkg.price,
               reward_coins: (pkg as any).reward_coins || 0,
-              isFromDiamondPackages: true, // Flag to track source
+              isFromDiamondPackages: true,
             }));
             setVariants(convertedVariants as any);
+          } else {
+            console.log("No variants or packages found - this product has no variants");
           }
         }
 
-        const { data: related } = await supabase
+        // Fetch related products
+        const { data: related, error: relatedError } = await supabase
           .from("products")
           .select("id, name, slug, image, image_url, category, description")
           .eq("is_active", true)
           .neq("slug", slug)
           .limit(6);
-        if (related) setRelatedProducts(related as Product[]);
+          
+        if (relatedError) {
+          console.error("Error fetching related products:", relatedError.message);
+        } else if (related) {
+          setRelatedProducts(related as Product[]);
+        }
         
         setLoading(false);
+        console.log("=== PRODUCT DATA LOADING COMPLETE ===");
       } catch (error) {
         console.error("Fetch error:", error);
         toast.error("প্রোডাক্ট লোড করতে সমস্যা হয়েছে");
@@ -226,10 +222,6 @@ const ProductDetail = () => {
       }
     };
     fetchData();
-    
-    // Simulate real-time view count
-    const randomViewers = Math.floor(Math.random() * 20) + 5; // 5-25 viewers
-    setViewCount(randomViewers);
   }, [slug]);
 
   const getImage = (p: Product) => {
@@ -298,20 +290,6 @@ const ProductDetail = () => {
       console.error("No variant selected");
       toast.error("একটি ভ্যারিয়েন্ট সিলেক্ট করুন"); 
       return; 
-    }
-    
-    // Validate dynamic user info fields
-    if (!product.is_voucher && product.user_info_fields && product.user_info_fields.length > 0) {
-      const missingFields = product.user_info_fields.filter(field => {
-        const value = userInfoData[field.id];
-        return field.required && (!value || !value.trim());
-      });
-      
-      if (missingFields.length > 0) {
-        const fieldNames = missingFields.map(f => f.label).join(', ');
-        toast.error(`Missing required fields: ${fieldNames}`);
-        return;
-      }
     }
 
     const variant = variants.find(v => v.id === selectedVariant) || null;
@@ -468,14 +446,7 @@ const ProductDetail = () => {
           } else {
             toast.error("দুঃখিত, স্টকে কোড নেই।");
             await supabase.from("orders").update({ status: "cancelled" }).eq("id", createdOrder.id);
-            // Refund coins
-            await supabase.rpc("refund_coins", {
-              _user_id: user.id,
-              _amount: amount,
-              _transaction_type: "order_cancelled",
-              _reference_id: createdOrder.id,
-              _description: "Refund due to out of stock voucher code"
-            });
+            // Note: Coin refund handled by database trigger
             setOrdering(false);
             refreshProfile();
             return;
@@ -744,8 +715,8 @@ const ProductDetail = () => {
           <img src={getImage(product)} alt={product.name} className="w-full h-44 object-cover" />
           <div className="absolute inset-0 bg-gradient-to-t from-foreground/70 to-transparent flex items-end p-4">
             <div>
-              <h1 className="text-primary-foreground font-bold text-lg">{product.name}</h1>
-              <p className="text-primary-foreground/70 text-sm">{product.category}</p>
+              <h1 className="text-primary-foreground font-semibold text-sm sm:text-base">{product.name}</h1>
+              <p className="text-primary-foreground/80 text-xs">{product.category}</p>
             </div>
           </div>
           <div className="absolute top-3 right-3 bg-background/90 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-lg border border-border flex items-center gap-2 animate-pulse">
@@ -762,10 +733,10 @@ const ProductDetail = () => {
           <section className="bg-card rounded-xl p-4 card-shadow">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
-                <span className="bg-primary text-primary-foreground rounded-full w-7 h-7 flex items-center justify-center text-sm font-bold">1</span>
-                <h2 className="font-bold">ভ্যারিয়েন্ট সিলেক্ট করুন</h2>
+                <span className="bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs font-semibold">1</span>
+                <h2 className="font-semibold text-sm sm:text-base">ভ্যারিয়েন্ট সিলেক্ট করুন</h2>
               </div>
-              <span className="text-sm text-muted-foreground">কিনে পান <span className="text-secondary font-bold">{variants.find(v => v.id === selectedVariant)?.reward_coins || 0}</span> Coins 🪙</span>
+              <span className="text-xs text-muted-foreground">কিনে পান <span className="text-secondary font-semibold">{variants.find(v => v.id === selectedVariant)?.reward_coins || 0}</span> Coins 🪙</span>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
               {variants.map((variant) => (
@@ -783,7 +754,7 @@ const ProductDetail = () => {
                   
                   {/* Content */}
                   <div className="w-full text-center relative z-10">
-                    <div className="text-xs font-bold text-foreground mb-0.5 truncate">
+                    <div className="text-xs font-semibold text-foreground mb-0.5 truncate">
                       {variant.value}
                     </div>
                     {variant.name && variant.name.trim() !== "" && (
@@ -795,9 +766,9 @@ const ProductDetail = () => {
                   
                   {/* Price & Coins */}
                   <div className="flex items-center gap-1 mt-1.5 w-full justify-center relative z-10">
-                    <span className="text-primary font-extrabold text-xs">৳{variant.price}</span>
+                    <span className="text-primary font-bold text-xs">৳{variant.price}</span>
                     {variant.reward_coins > 0 && (
-                      <Badge className="text-[8px] px-1 py-0 h-3.5 bg-gradient-to-r from-secondary/90 to-secondary font-bold shadow-sm">
+                      <Badge className="text-[8px] px-1 py-0 h-3.5 bg-gradient-to-r from-secondary/90 to-secondary font-semibold shadow-sm">
                         +{variant.reward_coins}🪙
                       </Badge>
                     )}
@@ -828,17 +799,17 @@ const ProductDetail = () => {
         <section className="bg-card rounded-xl p-4 card-shadow">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <span className="bg-primary text-primary-foreground rounded-full w-7 h-7 flex items-center justify-center text-sm font-bold">{product.is_voucher ? "2" : "3"}</span>
-              <h2 className="font-bold">Quantity</h2>
+              <span className="bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs font-semibold">{product.is_voucher ? "2" : "3"}</span>
+              <h2 className="font-semibold text-sm sm:text-base">Quantity</h2>
             </div>
-            <Badge variant="secondary" className="bg-accent text-foreground">
+            <Badge variant="secondary" className="bg-accent text-foreground text-xs">
               Total: ৳{(selectedPrice * quantity).toFixed(2)} | {Math.round((selectedPrice * quantity) / coinValue)} 🪙
             </Badge>
           </div>
           <div className="flex items-center gap-3">
             <button
               onClick={() => setQuantity(Math.max(1, quantity - 1))}
-              className="w-10 h-10 rounded-lg bg-accent hover:bg-accent/80 flex items-center justify-center text-foreground font-bold text-xl transition"
+              className="w-8 h-8 rounded-lg bg-accent hover:bg-accent/80 flex items-center justify-center text-foreground font-semibold transition"
               disabled={quantity <= 1}
             >
               −
@@ -854,16 +825,16 @@ const ProductDetail = () => {
                   setQuantity(val);
                 }
               }}
-              className="w-20 h-10 text-center border-2 border-border rounded-lg bg-background focus:border-primary focus:outline-none font-bold text-lg"
+              className="w-14 h-8 text-center border-2 border-border rounded-lg bg-background focus:border-primary focus:outline-none font-semibold text-sm sm:text-base"
             />
             <button
               onClick={() => setQuantity(Math.min(100, quantity + 1))}
-              className="w-10 h-10 rounded-lg bg-accent hover:bg-accent/80 flex items-center justify-center text-foreground font-bold text-xl transition"
+              className="w-8 h-8 rounded-lg bg-accent hover:bg-accent/80 flex items-center justify-center text-foreground font-semibold transition"
               disabled={quantity >= 100}
             >
               +
             </button>
-            <span className="text-muted-foreground text-sm ml-2">Max: 100</span>
+            <span className="text-muted-foreground text-xs ml-2">Max: 100</span>
           </div>
         </section>
 
@@ -872,42 +843,14 @@ const ProductDetail = () => {
           <section className="bg-card rounded-xl p-4 card-shadow">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
-                <span className="bg-primary text-primary-foreground rounded-full w-7 h-7 flex items-center justify-center text-sm font-bold">{product.is_voucher ? "2" : "3"}</span>
-                <h2 className="font-bold">Account Info</h2>
+                <span className="bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs font-semibold">{product.is_voucher ? "2" : "3"}</span>
+                <h2 className="font-semibold text-sm sm:text-base">Account Info</h2>
               </div>
-              {product.user_info_fields && product.user_info_fields.length > 0 && (
-                <Badge variant="secondary" className="text-xs">
-                  {product.user_info_fields.length} field{product.user_info_fields.length > 1 ? 's' : ''} required
-                </Badge>
-              )}
             </div>
             
-            {/* Dynamic Fields from Admin */}
-            {product.user_info_fields && product.user_info_fields.length > 0 ? (
-              <div className="space-y-4">
-                {product.user_info_fields.map((field, index) => (
-                  <div key={field.id || index}>
-                    <label className="text-sm font-medium mb-1 block">
-                      {field.label}
-                      {field.required && <span className="text-destructive ml-1">*</span>}
-                    </label>
-                    <Input
-                      type={field.type || 'text'}
-                      placeholder={field.placeholder || `Enter ${field.label.toLowerCase()}`}
-                      value={userInfoData[field.id] || ''}
-                      onChange={(e) => setUserInfoData({
-                        ...userInfoData,
-                        [field.id]: e.target.value
-                      })}
-                      required={field.required}
-                    />
-                  </div>
-                ))}
-              </div>
-            ) : (
-              /* Fallback - Default Player UID field with Verification */
-              <div>
-                <label className="text-sm font-medium mb-1 block">Player UID</label>
+            {/* Player UID field with Verification */}
+            <div>
+                <label className="text-xs font-medium mb-1 block">Player UID</label>
                 <div className="flex gap-2">
                   <Input 
                     placeholder="Player UID" 
@@ -928,7 +871,7 @@ const ProductDetail = () => {
                   >
                     {isVerifying ? (
                       <>
-                        <svg className="animate-spin h-4 w-4 mr-2" viewBox="0 0 24 24">
+                        <svg className="animate-spin h-3 w-3 mr-2" viewBox="0 0 24 24">
                           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                         </svg>
@@ -946,7 +889,7 @@ const ProductDetail = () => {
                     <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    <span className="text-sm font-medium text-green-800">
+                    <span className="text-xs font-medium text-green-800">
                       ✅ প্লেয়ার ভেরিফাইড: <strong>{verifiedPlayerName}</strong>
                     </span>
                   </div>
@@ -957,7 +900,7 @@ const ProductDetail = () => {
                     <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    <span className="text-sm font-medium text-red-800">
+                    <span className="text-xs font-medium text-red-800">
                       ❌ {verificationError}
                     </span>
                   </div>
@@ -966,48 +909,47 @@ const ProductDetail = () => {
                 <p className="text-xs text-muted-foreground mt-2">
                   Enter your game player ID and verify to see real name
                 </p>
-              </div>
-            )}
+            </div>
           </section>
         )}
 
         {/* Step 3: Payment */}
         <section className="bg-card rounded-xl p-4 card-shadow">
           <div className="flex items-center gap-2 mb-4">
-            <span className="bg-primary text-primary-foreground rounded-full w-7 h-7 flex items-center justify-center text-sm font-bold">4</span>
-            <h2 className="font-bold">Payment Methods</h2>
+            <span className="bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs font-semibold">4</span>
+            <h2 className="font-semibold text-sm sm:text-base">Payment Methods</h2>
           </div>
           <div className="grid grid-cols-3 gap-3">
             <button
               onClick={() => setPaymentMethod("wallet")}
-              className={`rounded-xl p-4 border-2 transition text-center ${
+              className={`rounded-xl p-3 border-2 transition text-center ${
                 paymentMethod === "wallet" ? "border-primary bg-accent" : "border-border"
               }`}
             >
-              <span className="text-3xl">💰</span>
-              <p className="text-sm font-semibold mt-2">Wallet</p>
-              {profile && <p className="text-xs text-muted-foreground mt-1">৳{profile.balance}</p>}
+              <span className="text-xl">💰</span>
+              <p className="text-xs font-semibold mt-1.5">Wallet</p>
+              {profile && <p className="text-[10px] text-muted-foreground mt-0.5">৳{profile.balance}</p>}
             </button>
             <button
               onClick={() => setPaymentMethod("coin")}
               disabled={profile?.coins === 0}
-              className={`rounded-xl p-4 border-2 transition text-center ${
+              className={`rounded-xl p-3 border-2 transition text-center ${
                 paymentMethod === "coin" ? "border-primary bg-accent" : "border-border"
               } ${profile?.coins === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
-              <span className="text-3xl">🪙</span>
-              <p className="text-sm font-semibold mt-2">Coins</p>
-              <p className="text-xs text-muted-foreground mt-1">{profile?.coins || 0} 🪙</p>
+              <span className="text-xl">🪙</span>
+              <p className="text-xs font-semibold mt-1.5">Coins</p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">{profile?.coins || 0} 🪙</p>
             </button>
             <button
               onClick={() => setPaymentMethod("instant")}
-              className={`rounded-xl p-4 border-2 transition text-center ${
+              className={`rounded-xl p-3 border-2 transition text-center ${
                 paymentMethod === "instant" ? "border-primary bg-accent" : "border-border"
               }`}
             >
-              <span className="text-3xl">⚡</span>
-              <p className="text-sm font-semibold mt-2">Instant Pay</p>
-              <p className="text-xs text-muted-foreground mt-1">UddoktaPay</p>
+              <span className="text-xl">⚡</span>
+              <p className="text-xs font-semibold mt-1.5">Instant Pay</p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">UddoktaPay</p>
             </button>
           </div>
           
@@ -1015,16 +957,16 @@ const ProductDetail = () => {
             <div className="mt-4 p-3 bg-green-50 dark:bg-green-950/20 rounded-lg border border-green-200 dark:border-green-800">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Coins className="h-5 w-5 text-green-600" />
-                  <span className="text-sm font-semibold text-green-800 dark:text-green-200">
+                  <Coins className="h-3.5 w-3.5 text-green-600" />
+                  <span className="text-xs font-semibold text-green-800 dark:text-green-200">
                     Coin Payment Selected
                   </span>
                 </div>
-                <Badge variant="secondary" className="bg-green-200 dark:bg-green-800 text-green-800 dark:text-green-200">
+                <Badge variant="secondary" className="bg-green-200 dark:bg-green-800 text-green-800 dark:text-green-200 text-[9px]">
                   -{selectedPrice} 🪙
                 </Badge>
               </div>
-              <p className="text-xs text-green-700 dark:text-green-300 mt-2 ml-7">
+              <p className="text-[10px] text-green-700 dark:text-green-300 mt-1.5 ml-6">
                 আপনার কাছে {profile?.coins || 0} কয়েন আছে। এই পণ্য কিনতে {selectedPrice} কয়েন লাগবে।
                 {(profile?.coins || 0) >= selectedPrice ? (
                   <span className="font-bold text-green-800 dark:text-green-200"> ✓ পর্যাপ্ত কয়েন</span>
@@ -1034,8 +976,8 @@ const ProductDetail = () => {
               </p>
             </div>
           )}
-          <p className="text-sm text-muted-foreground mt-4 flex items-center gap-1">
-            ℹ️ প্রোডাক্ট কিনতে আপনার প্রয়োজন <span className="text-secondary font-bold">৳ {selectedPrice}</span> টাকা।
+          <p className="text-xs text-muted-foreground mt-4 flex items-center gap-1">
+            ℹ️ প্রোডাক্ট কিনতে আপনার প্রয়োজন <span className="text-secondary font-semibold">৳ {selectedPrice}</span> টাকা।
           </p>
           {user ? (
             <Button
@@ -1047,7 +989,7 @@ const ProductDetail = () => {
             </Button>
           ) : (
             <>
-              <p className="text-sm text-primary mt-2 flex items-center gap-1">
+              <p className="text-xs text-primary mt-2 flex items-center gap-1">
                 ℹ️ Please Login To Purchase
               </p>
               <Link to="/login">
@@ -1061,11 +1003,11 @@ const ProductDetail = () => {
 
         {/* Product Info */}
         <section className="bg-card rounded-xl p-4 card-shadow">
-          <h2 className="font-bold text-lg mb-3 border-b border-border pb-2">Product Information</h2>
+          <h2 className="font-semibold text-sm sm:text-base mb-3 border-b border-border pb-2">Product Information</h2>
           {product.description ? (
-            <div className="text-sm text-muted-foreground whitespace-pre-line">{product.description}</div>
+            <div className="text-xs text-muted-foreground whitespace-pre-line">{product.description}</div>
           ) : (
-            <ul className="space-y-3 text-sm text-muted-foreground list-disc pl-5">
+            <ul className="space-y-1.5 text-xs text-muted-foreground list-disc pl-4">
               <li>শুধুমাত্র Bangladesh সার্ভারে ID Code দিয়ে টপ আপ হবে।</li>
               <li>Player ID Code ভুল দিয়ে Diamond না পেলে Games Bazar কর্তৃপক্ষ দায়ী নয়।</li>
               <li>Order কমপ্লিট হওয়ার পরেও আইডিতে ডায়মন্ড না গেলে সাপোর্টে মেসেজ দিন।</li>
@@ -1077,14 +1019,14 @@ const ProductDetail = () => {
         {/* Related Items */}
         {relatedProducts.length > 0 && (
           <section>
-            <h2 className="font-bold text-lg text-center mb-4">Related Items</h2>
+            <h2 className="font-semibold text-sm sm:text-base text-center mb-3">Related Items</h2>
             <div className="grid grid-cols-3 gap-3">
               {relatedProducts.map(p => (
                 <Link key={p.id} to={`/product/${p.slug}`} className="group">
                   <div className="rounded-xl overflow-hidden card-shadow hover:card-shadow-hover transition-shadow">
                     <img src={getImage(p)} alt={p.name} className="w-full aspect-square object-cover" />
                   </div>
-                  <p className="text-xs font-semibold text-center mt-2">{p.name}</p>
+                  <p className="text-[9px] sm:text-[10px] font-semibold text-center mt-1.5">{p.name}</p>
                 </Link>
               ))}
             </div>

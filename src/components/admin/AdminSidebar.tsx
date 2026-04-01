@@ -39,6 +39,7 @@ const items = [
 
 export function AdminSidebar() {
   const { state } = useSidebar();
+  const { isMobile, openMobile } = useSidebar();
   const collapsed = state === "collapsed";
   const location = useLocation();
   const navigate = useNavigate();
@@ -52,28 +53,26 @@ export function AdminSidebar() {
     <Sidebar collapsible="icon" className="border-r bg-card flex-shrink-0">
       <SidebarContent className="bg-background overflow-y-auto">
         <SidebarGroup>
-          <SidebarGroupLabel className="text-xs uppercase tracking-wider text-muted-foreground px-3 py-3">
+          <SidebarGroupLabel className="text-xs font-bold uppercase tracking-wide text-muted-foreground px-3 py-3 md:py-4 border-b">
             {!collapsed && "Admin Panel"}
           </SidebarGroupLabel>
-          <SidebarGroupContent>
+          <SidebarGroupContent className="py-2">
             <SidebarMenu className="space-y-1">
               {items.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton 
                     asChild 
-                    className="min-h-[44px] px-3 hover:bg-accent/50 transition-colors"
+                    className="min-h-[52px] px-3 hover:bg-accent/60 transition-all rounded-lg mx-2 my-0.5"
                   >
                     <NavLink
                       to={item.url}
                       end={item.url === "/admin"}
-                      className="flex items-center gap-2 w-full"
-                      activeClassName="bg-accent text-accent-foreground font-semibold"
+                      className="flex items-center gap-3 w-full"
+                      activeClassName="bg-accent text-accent-foreground font-bold shadow-sm"
                       onClick={handleNavClick}
                     >
-                      <item.icon className="h-4 w-4 flex-shrink-0" />
-                      {!collapsed && (
-                        <span className="text-sm truncate">{item.title}</span>
-                      )}
+                      <item.icon className="h-5 w-5 md:h-[22px] md:w-[22px] flex-shrink-0" />
+                      <span className="text-sm md:text-base font-semibold truncate leading-tight">{item.title}</span>
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -82,18 +81,18 @@ export function AdminSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        <SidebarGroup>
+        <SidebarGroup className="border-t mt-auto pt-2">
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
                 <SidebarMenuButton asChild>
                   <Button
                     variant="ghost"
-                    className="w-full justify-start"
+                    className="w-full justify-start min-h-[52px] px-3 hover:bg-accent/60 transition-all rounded-lg mx-2 my-0.5 font-semibold"
                     onClick={() => navigate("/")}
                   >
-                    <ArrowLeft className="mr-2 h-4 w-4" />
-                    {!collapsed && <span>সাইটে ফিরুন</span>}
+                    <ArrowLeft className="mr-3 h-5 w-5 md:h-[22px] md:w-[22px]" />
+                    <span className="text-sm md:text-base">সাইটে ফিরুন</span>
                   </Button>
                 </SidebarMenuButton>
               </SidebarMenuItem>
